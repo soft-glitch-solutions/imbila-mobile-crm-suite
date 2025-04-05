@@ -53,27 +53,27 @@ const Dashboard = ({ businessType }: DashboardProps) => {
   return (
     <div className="space-y-6 pb-20">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-imbila-dark">{getBusinessTypeTitle()}</h2>
-        <Button variant="outline" size="sm">
-          <Activity className="h-4 w-4 mr-1" /> View Reports
+        <h2 className="text-xl font-bold text-imbila-dark">{getBusinessTypeTitle()}</h2>
+        <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-8">
+          <Activity className="h-3 w-3 mr-1" /> Reports
         </Button>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Total Leads</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-500">Leads</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-end justify-between">
               <div className="text-2xl font-bold">{dashboardData.leads.total}</div>
               <div className="flex items-center text-xs font-medium text-green-600">
                 <ArrowUp className="h-3 w-3 mr-1" />
-                {dashboardData.leads.new} new
+                {dashboardData.leads.new}
               </div>
             </div>
             <div className="mt-2 text-xs text-gray-500">
-              {dashboardData.leads.conversion}% conversion rate
+              {dashboardData.leads.conversion}% conversion
             </div>
           </CardContent>
         </Card>
@@ -95,10 +95,6 @@ const Dashboard = ({ businessType }: DashboardProps) => {
               </div>
             </div>
             <div className="mt-2 text-xs text-gray-500">
-              <div className="flex justify-between mb-1">
-                <span>Target: {dashboardData.sales.target}</span>
-                <span>{dashboardData.sales.progress}%</span>
-              </div>
               <Progress value={dashboardData.sales.progress} className="h-1.5" />
             </div>
           </CardContent>
@@ -148,39 +144,38 @@ const Dashboard = ({ businessType }: DashboardProps) => {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium">Recent Leads</CardTitle>
-          <CardDescription>Your most recent lead activity</CardDescription>
         </CardHeader>
         <CardContent>
           {dashboardData.recentLeads.length > 0 ? (
             <div className="space-y-3">
               {dashboardData.recentLeads.map((lead) => (
-                <div key={lead.id} className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0">
+                <div key={lead.id} className="flex items-center justify-between">
                   <div>
                     <div className="font-medium">{lead.name}</div>
                     <div className="text-xs text-gray-500">{lead.company}</div>
                   </div>
                   <div className="flex items-center">
-                    <div className="mr-4">
-                      <div className={`text-xs px-2 py-1 rounded-full ${
+                    <div className="mr-2">
+                      <div className={`text-xs px-2 py-0.5 rounded-full ${
                         lead.status === "New" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"
                       }`}>
                         {lead.status}
                       </div>
                       <div className="text-xs text-gray-500 mt-1 text-right">{lead.date}</div>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button variant="ghost" size="icon" className="h-7 w-7">
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
               ))}
-              <Button variant="outline" size="sm" className="w-full mt-2">
+              <Button variant="outline" size="sm" className="w-full mt-2 text-xs">
                 View All Leads
               </Button>
             </div>
           ) : (
-            <div className="text-center py-4 text-gray-500">
-              No recent leads. Start adding leads to see them here.
+            <div className="text-center py-4 text-gray-500 text-sm">
+              No recent leads.
             </div>
           )}
         </CardContent>
@@ -188,7 +183,7 @@ const Dashboard = ({ businessType }: DashboardProps) => {
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-medium">Tasks & Reminders</CardTitle>
+          <CardTitle className="text-base font-medium">Tasks</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -202,9 +197,9 @@ const Dashboard = ({ businessType }: DashboardProps) => {
                     task.priority === "high" ? "bg-red-500" : 
                     task.priority === "medium" ? "bg-yellow-500" : "bg-blue-500"
                   }`} />
-                  <span>{task.title}</span>
+                  <span className="text-sm">{task.title}</span>
                 </div>
-                <Button variant="ghost" size="sm" className="h-8">
+                <Button variant="ghost" size="sm" className="h-7 text-xs">
                   Complete
                 </Button>
               </div>

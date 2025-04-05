@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Briefcase, Home, User, Users, Clipboard, File, Settings } from "lucide-react";
+import { Briefcase, Home, User, Users, Clipboard, File, Settings, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -17,9 +17,7 @@ const MobileNavbar = ({ activeTab, setActiveTab }: {
     { name: "Dashboard", icon: <Home className="h-5 w-5" /> },
     { name: "Leads", icon: <Users className="h-5 w-5" /> },
     { name: "Sales", icon: <Briefcase className="h-5 w-5" /> },
-    { name: "Compliance", icon: <Clipboard className="h-5 w-5" /> },
-    { name: "Website", icon: <File className="h-5 w-5" /> },
-    { name: "Settings", icon: <Settings className="h-5 w-5" /> }
+    { name: "Quotes", icon: <FileText className="h-5 w-5" /> },
   ];
 
   return (
