@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Plus, Filter, ArrowUpDown, MoreHorizontal, Phone, Mail } from "lucide-react";
+import { Search, Plus, Filter, Phone, Mail } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -36,6 +35,7 @@ interface LeadManagementProps {
 const LeadManagement = ({ businessType }: LeadManagementProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("all");
   const [newLead, setNewLead] = useState({
     name: "",
     company: "",
@@ -103,7 +103,7 @@ const LeadManagement = ({ businessType }: LeadManagementProps) => {
     lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     lead.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
     lead.status.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ).filter(lead => activeTab === "all" || lead.status.toLowerCase() === activeTab.toLowerCase());
 
   const handleAddLead = () => {
     // In a real app, this would call an API to add the lead
@@ -135,6 +135,10 @@ const LeadManagement = ({ businessType }: LeadManagementProps) => {
       default:
         return "bg-gray-100 text-gray-800";
     }
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
   };
 
   return (
@@ -235,86 +239,56 @@ const LeadManagement = ({ businessType }: LeadManagementProps) => {
         </Button>
       </div>
 
-      <Tabs defaultValue="all">
+      <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="flex justify-start overflow-auto">
           <TabsTrigger value="all">All Leads</TabsTrigger>
           <TabsTrigger value="new">New</TabsTrigger>
           <TabsTrigger value="contacted">Contacted</TabsTrigger>
           <TabsTrigger value="qualified">Qualified</TabsTrigger>
           <TabsTrigger value="proposal">Proposal</TabsTrigger>
-          <TabsTrigger value="won">Won</TabsTrigger>
-          <TabsTrigger value="lost">Lost</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="all" className="mt-6">
-          <Card>
-            <CardHeader className="py-3">
-              <CardTitle className="text-base font-medium">All Leads ({filteredLeads.length})</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0 overflow-auto">
-              <Table>
-                <TableHeader className="bg-gray-50">
-                  <TableRow>
-                    <TableHead className="w-[180px]">Name</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Value</TableHead>
-                    <TableHead className="w-[100px] text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredLeads.length > 0 ? (
-                    filteredLeads.map((lead) => (
-                      <TableRow key={lead.id}>
-                        <TableCell className="font-medium">{lead.name}</TableCell>
-                        <TableCell>{lead.company}</TableCell>
-                        <TableCell>
-                          <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(lead.status)}`}>
-                            {lead.status}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">{lead.value}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end space-x-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Phone className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Mail className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-6">
-                        No leads found matching your search.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="new">
-          <div className="mt-6 text-center text-gray-500 py-8">
-            <p>Filter view for New leads would appear here</p>
+        <TabsContent value={activeTab} className="mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {filteredLeads.length > 0 ? (
+              filteredLeads.map((lead) => (
+                <Card key={lead.id} className="overflow-hidden">
+                  <CardContent className="p-4">
+                    <div className="flex flex-col h-full">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="font-medium">{lead.name}</h3>
+                          <p className="text-sm text-gray-500">{lead.company}</p>
+                        </div>
+                        <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(lead.status)}`}>
+                          {lead.status}
+                        </span>
+                      </div>
+                      
+                      <div className="text-sm my-2">
+                        <p className="font-medium mb-1">Value: {lead.value}</p>
+                        <p className="text-gray-500">{lead.date}</p>
+                      </div>
+                      
+                      <div className="mt-auto pt-3 border-t flex justify-between">
+                        <Button variant="ghost" size="sm" className="flex-1">
+                          <Phone className="h-4 w-4 mr-1" /> Call
+                        </Button>
+                        <Button variant="ghost" size="sm" className="flex-1">
+                          <Mail className="h-4 w-4 mr-1" /> Email
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="col-span-2 text-center py-8">
+                <p className="text-gray-500">No leads found matching your search.</p>
+              </div>
+            )}
           </div>
         </TabsContent>
-        
-        <TabsContent value="contacted">
-          <div className="mt-6 text-center text-gray-500 py-8">
-            <p>Filter view for Contacted leads would appear here</p>
-          </div>
-        </TabsContent>
-        
-        {/* Additional tabs would have similar placeholder content */}
       </Tabs>
     </div>
   );

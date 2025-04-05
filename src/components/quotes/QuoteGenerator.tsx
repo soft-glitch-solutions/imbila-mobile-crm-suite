@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, FileDown, Send, Save, FilePlus, Calendar } from "lucide-react";
+import { Plus, Trash2, FileDown, Send, Save, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -74,8 +74,45 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
   };
 
   const handleGeneratePDF = () => {
+    // Generate a PDF from the quote content
     const currentDate = format(new Date(), "yyyy-MM-dd");
-    toast.success(`PDF quote generated with date stamp: ${currentDate}`);
+    
+    // Create a simple content string (would be HTML in a real app)
+    const content = `
+      IMBILA QUOTE
+      Date: ${currentDate}
+      Client: ${clientName}
+      Email: ${clientEmail}
+      
+      Items:
+      ${quoteItems.map(item => `${item.description}: ${item.quantity} x R${item.price} = R${(item.quantity * item.price).toFixed(2)}`).join('\n')}
+      
+      Subtotal: R${calculateSubtotal().toFixed(2)}
+      VAT (15%): R${calculateVAT().toFixed(2)}
+      Total: R${calculateTotal().toFixed(2)}
+      
+      Notes:
+      ${notes}
+    `;
+    
+    // Create a Blob from the content
+    const blob = new Blob([content], { type: 'text/plain' });
+    
+    // Create a URL for the blob
+    const url = URL.createObjectURL(blob);
+    
+    // Create a link element and trigger the download
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `quote-${clientName.replace(/\s+/g, '-').toLowerCase()}-${currentDate}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    
+    // Clean up
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast.success(`PDF quote downloaded with date stamp: ${currentDate}`);
   };
 
   return (
