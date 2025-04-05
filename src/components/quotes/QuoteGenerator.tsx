@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, FileDown, Send } from "lucide-react";
+import { Plus, Trash2, FileDown, Send, Save, FilePlus, Calendar } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 interface QuoteGeneratorProps {
   businessType: string;
@@ -64,18 +65,23 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
     toast.success("Quote created successfully!");
   };
 
+  const handleSave = () => {
+    toast.success("Quote saved successfully!");
+  };
+
+  const handleGenerate = () => {
+    toast.success("Quote generated successfully!");
+  };
+
+  const handleGeneratePDF = () => {
+    const currentDate = format(new Date(), "yyyy-MM-dd");
+    toast.success(`PDF quote generated with date stamp: ${currentDate}`);
+  };
+
   return (
     <div className="space-y-6 pb-20">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-imbila-dark">Create Quote</h2>
-        <div className="flex space-x-2">
-          <Button variant="outline" size="sm">
-            <FileDown className="h-4 w-4 mr-1" /> Save
-          </Button>
-          <Button size="sm">
-            <Send className="h-4 w-4 mr-1" /> Send
-          </Button>
-        </div>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -207,6 +213,32 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Bottom Action Buttons */}
+          <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-100 p-4 flex gap-2 justify-center">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleSave}
+              className="flex-1"
+            >
+              <Save className="h-4 w-4 mr-1" /> Save
+            </Button>
+            <Button 
+              type="submit" 
+              className="flex-1"
+            >
+              <Send className="h-4 w-4 mr-1" /> Generate
+            </Button>
+            <Button 
+              type="button" 
+              variant="secondary" 
+              onClick={handleGeneratePDF}
+              className="flex-1"
+            >
+              <Calendar className="h-4 w-4 mr-1" /> PDF
+            </Button>
+          </div>
         </div>
       </form>
     </div>
