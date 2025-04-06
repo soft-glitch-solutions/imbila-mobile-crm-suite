@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowUp, ArrowDown, Users, Briefcase, CreditCard, Activity, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -99,6 +98,7 @@ const Dashboard = ({ businessType }: DashboardProps) => {
         <p className="text-sm text-gray-500 mt-1">{getWelcomeMessage()}</p>
       </div>
 
+      {/* Rest of the dashboard content */}
       <div className="grid grid-cols-2 gap-4">
         <Card>
           <CardHeader className="pb-2">
