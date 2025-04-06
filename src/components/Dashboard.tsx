@@ -3,60 +3,100 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowUp, ArrowDown, Users, Briefcase, CreditCard, Activity, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DashboardProps {
   businessType: string;
 }
 
 const Dashboard = ({ businessType }: DashboardProps) => {
-  // Sample data - in a real app, this would come from API
-  const dashboardData = {
+  const { profile, businessProfile } = useAuth();
+  const [dashboardData, setDashboardData] = useState({
     leads: {
-      total: 28,
-      new: 5,
-      conversion: 32,
+      total: 0,
+      new: 0,
+      conversion: 0,
     },
     sales: {
-      total: "R24,500",
-      change: 12.5,
+      total: "R0",
+      change: 0,
       target: "R30,000",
-      progress: 82
+      progress: 0
     },
     expenses: {
-      total: "R8,750",
-      change: -5.2
+      total: "R0",
+      change: 0
     },
-    tasks: [
-      { id: 1, title: "Follow up with John about quote", priority: "high" },
-      { id: 2, title: "Renew business license", priority: "medium" },
-      { id: 3, title: "Update website content", priority: "low" }
-    ],
-    recentLeads: [
-      { id: 1, name: "Sarah Johnson", company: "Tech Solutions", status: "New", date: "Today" },
-      { id: 2, name: "Michael Brown", company: "Brown Consulting", status: "Contacted", date: "Yesterday" },
-    ]
-  };
+    tasks: [] as { id: number; title: string; priority: string }[],
+    recentLeads: [] as { id: number; name: string; company: string; status: string; date: string }[]
+  });
 
-  const getBusinessTypeTitle = () => {
-    const titles: {[key: string]: string} = {
-      retail: "Retail Dashboard",
-      tender: "Tender Business Dashboard",
-      construction: "Construction Dashboard",
-      professional: "Professional Services Dashboard",
-      education: "Education & Training Dashboard",
-      restaurant: "Restaurant Dashboard"
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (!businessProfile) return;
+      
+      // Fetch real data from Supabase
+      try {
+        // Sample data for now - in a production app, this would be real data from API
+        setDashboardData({
+          leads: {
+            total: 28,
+            new: 5,
+            conversion: 32,
+          },
+          sales: {
+            total: "R24,500",
+            change: 12.5,
+            target: "R30,000",
+            progress: 82
+          },
+          expenses: {
+            total: "R8,750",
+            change: -5.2
+          },
+          tasks: [
+            { id: 1, title: "Follow up with John about quote", priority: "high" },
+            { id: 2, title: "Renew business license", priority: "medium" },
+            { id: 3, title: "Update website content", priority: "low" }
+          ],
+          recentLeads: [
+            { id: 1, name: "Sarah Johnson", company: "Tech Solutions", status: "New", date: "Today" },
+            { id: 2, name: "Michael Brown", company: "Brown Consulting", status: "Contacted", date: "Yesterday" },
+          ]
+        });
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      }
     };
+
+    fetchDashboardData();
+  }, [businessProfile]);
+
+  // Function to get the welcome message with the user's name
+  const getWelcomeMessage = () => {
+    const firstName = profile?.first_name || "User";
+    const lastName = profile?.last_name || "";
+    const fullName = `${firstName} ${lastName}`.trim();
     
-    return titles[businessType] || "Business Dashboard";
+    const hour = new Date().getHours();
+    let greeting = "Welcome";
+    
+    if (hour < 12) greeting = "Good morning";
+    else if (hour < 18) greeting = "Good afternoon";
+    else greeting = "Good evening";
+    
+    return `${greeting}, ${fullName}`;
   };
 
   return (
     <div className="space-y-6 pb-20">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-imbila-dark">{getBusinessTypeTitle()}</h2>
-        <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-8">
-          <Activity className="h-3 w-3 mr-1" /> Reports
-        </Button>
+      <div>
+        <h2 className="text-xl font-bold text-imbila-dark">
+          {businessProfile?.business_name || "Business Dashboard"}
+        </h2>
+        <p className="text-sm text-gray-500 mt-1">{getWelcomeMessage()}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

@@ -11,6 +11,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 
 interface QuoteGeneratorProps {
   businessType: string;
@@ -82,6 +83,14 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
         return;
       }
       
+      // Convert quoteItems to a format compatible with Json type
+      const itemsForDb: Json = quoteItems.map(item => ({
+        id: item.id,
+        description: item.description,
+        quantity: item.quantity,
+        price: item.price
+      }));
+      
       const { data, error } = await supabase
         .from('quotes')
         .insert({
@@ -89,7 +98,7 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
           title: `Quote for ${clientName}`,
           client_name: clientName,
           client_email: clientEmail,
-          items: quoteItems,
+          items: itemsForDb,
           notes: notes,
           subtotal: calculateSubtotal(),
           vat: calculateVAT(),
