@@ -70,13 +70,13 @@ const BusinessTypeSelector = ({ onSelectBusinessType }: {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-4">
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold text-imbila-dark">Select Your Business Type</h2>
         <p className="text-gray-500 mt-1">We'll customize your experience based on your selection</p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         {businessTypes.map((type) => (
           <Card 
             key={type.id}
@@ -85,20 +85,25 @@ const BusinessTypeSelector = ({ onSelectBusinessType }: {
             }`}
             onClick={() => handleSelect(type.id)}
           >
-            <CardHeader className="flex flex-row items-center gap-4 pb-2">
-              {type.icon}
-              <div>
-                <CardTitle className="text-lg">{type.name}</CardTitle>
-                <CardDescription className="text-sm">{type.description}</CardDescription>
+            <CardHeader className="p-3">
+              <div className="flex items-center gap-2">
+                <div>
+                  {type.icon}
+                </div>
+                <div>
+                  <CardTitle className="text-base">{type.name}</CardTitle>
+                </div>
               </div>
+              <CardDescription className="text-xs mt-1">{type.description}</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 pt-0">
               <div className="text-xs text-gray-500">
                 <span className="font-medium">Features:</span>
-                <ul className="list-disc pl-4 mt-1 space-y-1">
-                  {type.features.map((feature, i) => (
+                <ul className="list-disc pl-4 mt-1 space-y-0.5">
+                  {type.features.slice(0, 3).map((feature, i) => (
                     <li key={i}>{feature}</li>
                   ))}
+                  {type.features.length > 3 && <li>+ {type.features.length - 3} more</li>}
                 </ul>
               </div>
             </CardContent>

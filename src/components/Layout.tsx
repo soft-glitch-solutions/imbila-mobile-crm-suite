@@ -7,7 +7,7 @@ import SalesTracking from "./sales/SalesTracking";
 import ComplianceCenter from "./compliance/ComplianceCenter";
 import WebsiteTemplates from "./website/WebsiteTemplates";
 import BusinessTypeSelector from "./BusinessTypeSelector";
-import { User, BellRing, Menu, X, Sun, Moon } from "lucide-react";
+import { User, BellRing, Menu, Sun, Moon } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
@@ -23,6 +23,14 @@ const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const isMobile = useIsMobile();
+  
+  // Load business type from localStorage
+  useEffect(() => {
+    const storedBusinessType = localStorage.getItem("selectedBusinessType");
+    if (storedBusinessType) {
+      setBusinessType(storedBusinessType);
+    }
+  }, []);
   
   // Effect to apply dark mode class to document element
   useEffect(() => {
@@ -168,7 +176,6 @@ const Layout = () => {
                     <Switch 
                       checked={darkMode} 
                       onCheckedChange={setDarkMode}
-                      size="sm"
                     />
                   </div>
                 </div>

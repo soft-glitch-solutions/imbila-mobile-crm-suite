@@ -4,9 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, FileDown, Send, Save, Calendar } from "lucide-react";
+import { Plus, Trash2, Send, Save, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface QuoteGeneratorProps {
   businessType: string;
@@ -62,55 +64,112 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Quote created successfully!");
+    handleGenerate();
   };
 
   const handleSave = () => {
+    if (!clientName) {
+      toast.error("Please enter a client name before saving");
+      return;
+    }
+    
+    // Here we would typically save to a database
+    // For now, we'll just show a success message
     toast.success("Quote saved successfully!");
   };
 
   const handleGenerate = () => {
+    if (!clientName) {
+      toast.error("Please enter a client name before generating");
+      return;
+    }
+    
+    // Generate quote logic would go here
     toast.success("Quote generated successfully!");
   };
 
   const handleGeneratePDF = () => {
-    // Generate a PDF from the quote content
+    if (!clientName) {
+      toast.error("Please enter a client name before generating PDF");
+      return;
+    }
+    
     const currentDate = format(new Date(), "yyyy-MM-dd");
+    const doc = new jsPDF();
     
-    // Create a simple content string (would be HTML in a real app)
-    const content = `
-      IMBILA QUOTE
-      Date: ${currentDate}
-      Client: ${clientName}
-      Email: ${clientEmail}
+    // Add company logo/header
+    doc.setFontSize(20);
+    doc.setTextColor(37, 99, 235); // imbila-blue
+    doc.text("IMBILA", 15, 20);
+    
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Professional Business Quote", 15, 28);
+    
+    // Add date and reference
+    doc.setFontSize(10);
+    doc.text(`Date: ${currentDate}`, 15, 40);
+    doc.text(`Reference: QT-${Math.floor(Math.random() * 10000)}`, 15, 45);
+    
+    // Client information
+    doc.setFontSize(12);
+    doc.text("Client Information:", 15, 55);
+    doc.setFontSize(10);
+    doc.text(`Name: ${clientName}`, 15, 62);
+    if (clientEmail) {
+      doc.text(`Email: ${clientEmail}`, 15, 67);
+    }
+    
+    // Quote items table
+    const tableRows = quoteItems.map(item => [
+      item.description || "Item",
+      item.quantity.toString(),
+      `R${item.price.toFixed(2)}`,
+      `R${(item.quantity * item.price).toFixed(2)}`
+    ]);
+    
+    autoTable(doc, {
+      startY: 75,
+      head: [["Description", "Quantity", "Unit Price", "Total"]],
+      body: tableRows,
+      theme: 'striped',
+      headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255] },
+    });
+    
+    // Calculate the Y position after the table
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    
+    // Summary
+    doc.text(`Subtotal: R${calculateSubtotal().toFixed(2)}`, 130, finalY + 10);
+    doc.text(`VAT (15%): R${calculateVAT().toFixed(2)}`, 130, finalY + 17);
+    doc.setFontSize(12);
+    doc.text(`Total: R${calculateTotal().toFixed(2)}`, 130, finalY + 25);
+    
+    // Add notes if available
+    if (notes) {
+      doc.setFontSize(10);
+      doc.text("Notes:", 15, finalY + 40);
       
-      Items:
-      ${quoteItems.map(item => `${item.description}: ${item.quantity} x R${item.price} = R${(item.quantity * item.price).toFixed(2)}`).join('\n')}
-      
-      Subtotal: R${calculateSubtotal().toFixed(2)}
-      VAT (15%): R${calculateVAT().toFixed(2)}
-      Total: R${calculateTotal().toFixed(2)}
-      
-      Notes:
-      ${notes}
-    `;
+      const splitNotes = doc.splitTextToSize(notes, 180);
+      doc.text(splitNotes, 15, finalY + 47);
+    }
     
-    // Create a Blob from the content
-    const blob = new Blob([content], { type: 'text/plain' });
+    // Add footer
+    const pageCount = doc.internal.pages.length;
+    doc.setFontSize(8);
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.text(
+        `Generated with IMBILA | ${currentDate}`,
+        doc.internal.pageSize.width / 2,
+        doc.internal.pageSize.height - 10,
+        { align: "center" }
+      );
+    }
     
-    // Create a URL for the blob
-    const url = URL.createObjectURL(blob);
-    
-    // Create a link element and trigger the download
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `quote-${clientName.replace(/\s+/g, '-').toLowerCase()}-${currentDate}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    
-    // Clean up
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Save PDF
+    const filename = `quote-${clientName.replace(/\s+/g, '-').toLowerCase()}-${currentDate}.pdf`;
+    doc.save(filename);
     
     toast.success(`PDF quote downloaded with date stamp: ${currentDate}`);
   };
@@ -252,7 +311,7 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
           </Card>
 
           {/* Bottom Action Buttons */}
-          <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-100 p-4 flex gap-2 justify-center">
+          <div className="fixed bottom-16 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 p-4 flex gap-2 justify-center">
             <Button 
               type="button" 
               variant="outline" 
