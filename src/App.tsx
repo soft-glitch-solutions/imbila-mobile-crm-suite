@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
+import Login from "./pages/Login";
 import { AuthProvider } from "./contexts/AuthContext";
 import AuthGuard from "./components/auth/AuthGuard";
 
@@ -21,7 +22,8 @@ const App = () => {
         <BrowserRouter>
           <AuthProvider>
             <Routes>
-              <Route path="/" element={<Navigate to="/onboarding" />} />
+              <Route path="/" element={<Navigate to="/login" />} />
+              <Route path="/login" element={<Login />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/dashboard" element={<AuthGuard><Index /></AuthGuard>} />
               <Route path="/customers" element={<AuthGuard><Index /></AuthGuard>} />

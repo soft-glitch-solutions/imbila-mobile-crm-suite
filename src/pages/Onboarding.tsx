@@ -33,18 +33,24 @@ const Onboarding = () => {
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   
   // Check if the user has completed onboarding
-  useEffect(() => {
-    // If user is authenticated and has a business profile, go to dashboard
-    if (!loading && user && businessProfile) {
-      navigate("/dashboard");
-    }
-    
-    // If the user is authenticated but doesn't have a business profile,
-    // move to the step for creating a business profile
-    if (!loading && user && !businessProfile && !showEmailConfirmation) {
-      setStep(3);
-    }
-  }, [user, businessProfile, loading, navigate, showEmailConfirmation]);
+// In your Onboarding component
+useEffect(() => {
+  // If user is authenticated and has a business profile, go to dashboard
+  if (!loading && user && businessProfile) {
+    navigate("/dashboard");
+    return;
+  }
+  
+  // If user is authenticated but no business profile, stay on onboarding
+  if (!loading && user && !businessProfile) {
+    return;
+  }
+  
+  // If no user, redirect to login
+  if (!loading && !user) {
+    navigate("/login");
+  }
+}, [user, businessProfile, loading, navigate]);
   
   const steps = [
     {
