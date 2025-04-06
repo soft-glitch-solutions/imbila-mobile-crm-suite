@@ -1,145 +1,231 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Briefcase, MapPin, Phone, Mail, Globe, Share2, Edit } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { BusinessProfileForm } from "../business/BusinessProfileForm";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "../ui/form";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import { Loader2, Upload } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BusinessProfileProps {
   businessType: string;
 }
 
+const userProfileSchema = z.object({
+  first_name: z.string().min(1, "First name is required"),
+  last_name: z.string().min(1, "Last name is required"),
+});
+
 const BusinessProfile = ({ businessType }: BusinessProfileProps) => {
-  // Sample business profile data
-  const businessProfile = {
-    name: "Imbila Solutions",
-    type: businessType,
-    description: "Providing innovative solutions tailored to your business needs.",
-    address: "123 Business Street, Johannesburg, South Africa",
-    phone: "+27 12 345 6789",
-    email: "info@imbilasolutions.com",
-    website: "www.imbilasolutions.com",
-    established: "2022",
-    employees: "1-10",
-    stats: {
-      leads: 45,
-      sales: "R98,500",
-      completion: 87,
-      clients: 22
+  const { user, profile, businessProfile, refreshProfile } = useAuth();
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(profile?.avatar_url || null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  
+  const form = useForm<z.infer<typeof userProfileSchema>>({
+    resolver: zodResolver(userProfileSchema),
+    defaultValues: {
+      first_name: profile?.first_name || "",
+      last_name: profile?.last_name || "",
+    },
+  });
+  
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Avatar must be smaller than 5MB");
+        return;
+      }
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
     }
+  };
+  
+  const uploadAvatar = async (): Promise<string | null> => {
+    if (!avatarFile) return profile?.avatar_url || null;
+    
+    const fileExt = avatarFile.name.split('.').pop();
+    const fileName = `${user?.id}-${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+    
+    try {
+      const { error: uploadError, data } = await supabase.storage
+        .from('business-logos') // Using the same bucket for simplicity
+        .upload(filePath, avatarFile, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('business-logos')
+        .getPublicUrl(filePath);
+        
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast.error('Failed to upload avatar');
+      return null;
+    }
+  };
+  
+  const onSubmit = async (data: z.infer<typeof userProfileSchema>) => {
+    try {
+      setIsUpdating(true);
+      
+      // Upload avatar if a new one is selected
+      let avatarUrl = null;
+      if (avatarFile) {
+        avatarUrl = await uploadAvatar();
+      }
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          ...data,
+          avatar_url: avatarUrl || profile?.avatar_url,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user?.id);
+      
+      if (error) throw error;
+      
+      await refreshProfile();
+      toast.success("Profile updated successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update profile");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+  
+  const getInitials = () => {
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase();
+    }
+    return user?.email?.substring(0, 2).toUpperCase() || "U";
   };
 
   return (
-    <div className="space-y-6 pb-20">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-imbila-dark">Business Profile</h2>
-        <div className="flex space-x-2">
-          <Button variant="outline" size="sm">
-            <Share2 className="h-4 w-4 mr-1" /> Share
-          </Button>
-          <Button size="sm">
-            <Edit className="h-4 w-4 mr-1" /> Edit
-          </Button>
-        </div>
-      </div>
-
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center text-center">
-            <div className="bg-imbila-blue text-white rounded-full w-20 h-20 flex items-center justify-center text-3xl font-bold mb-3">
-              {businessProfile.name.substring(0, 2).toUpperCase()}
-            </div>
-            <h3 className="text-xl font-bold">{businessProfile.name}</h3>
-            <div className="text-sm text-gray-500 flex items-center mt-1">
-              <Briefcase className="h-4 w-4 mr-1" />
-              {businessProfile.type.charAt(0).toUpperCase() + businessProfile.type.slice(1)} Business
-            </div>
-            <p className="mt-3 text-gray-600">{businessProfile.description}</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Total Leads</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{businessProfile.stats.leads}</div>
-            <div className="mt-1 text-xs text-imbila-blue">View all leads →</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Total Sales</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{businessProfile.stats.sales}</div>
-            <div className="mt-1 text-xs text-imbila-blue">View details →</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Completion Rate</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{businessProfile.stats.completion}%</div>
-            <div className="mt-1 text-xs text-imbila-blue">View details →</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Active Clients</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{businessProfile.stats.clients}</div>
-            <div className="mt-1 text-xs text-imbila-blue">View all clients →</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Contact Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-start">
-            <MapPin className="h-5 w-5 text-gray-400 mt-0.5 mr-3 flex-shrink-0" />
-            <span>{businessProfile.address}</span>
-          </div>
-          <div className="flex items-center">
-            <Phone className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
-            <span>{businessProfile.phone}</span>
-          </div>
-          <div className="flex items-center">
-            <Mail className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
-            <span>{businessProfile.email}</span>
-          </div>
-          <div className="flex items-center">
-            <Globe className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
-            <span>{businessProfile.website}</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Business Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="text-sm text-gray-500">Established</div>
-              <div className="font-medium">{businessProfile.established}</div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-500">Employees</div>
-              <div className="font-medium">{businessProfile.employees}</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">Profile Settings</h1>
+      
+      <Tabs defaultValue="personal">
+        <TabsList>
+          <TabsTrigger value="personal">Personal Profile</TabsTrigger>
+          <TabsTrigger value="business">Business Profile</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="personal" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Personal Information</CardTitle>
+              <CardDescription>Update your personal details and profile picture</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2">Profile Picture</label>
+                <div className="flex items-center space-x-4">
+                  <Avatar className="w-20 h-20">
+                    <AvatarImage src={avatarPreview || profile?.avatar_url} />
+                    <AvatarFallback>{getInitials()}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <label htmlFor="avatar-upload" className="cursor-pointer">
+                      <div className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md">
+                        <Upload size={16} />
+                        <span className="text-sm">Upload Picture</span>
+                      </div>
+                      <input
+                        id="avatar-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleAvatarChange}
+                      />
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1">
+                      PNG, JPG, GIF up to 5MB
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="first_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>First name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="First name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="last_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Last name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Last name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div>
+                    <FormLabel>Email</FormLabel>
+                    <Input value={user?.email || ""} disabled />
+                    <p className="text-xs text-gray-500 mt-1">Your email cannot be changed</p>
+                  </div>
+                  
+                  <Button type="submit" disabled={isUpdating}>
+                    {isUpdating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      "Update Profile"
+                    )}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="business" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Business Profile</CardTitle>
+              <CardDescription>Update your business information and logo</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <BusinessProfileForm />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

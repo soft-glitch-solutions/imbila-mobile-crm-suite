@@ -9,7 +9,323 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      business_profiles: {
+        Row: {
+          address: string | null
+          business_name: string
+          business_type: string
+          created_at: string
+          email: string | null
+          id: string
+          logo_url: string | null
+          owner_id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          business_name: string
+          business_type: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          owner_id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          business_name?: string
+          business_type?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          owner_id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_profiles_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_type_change_requests: {
+        Row: {
+          business_id: string
+          created_at: string
+          current_type: string
+          id: string
+          requested_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          current_type: string
+          id?: string
+          requested_type: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          current_type?: string
+          id?: string
+          requested_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_type_change_requests_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          address: string | null
+          business_id: string
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          business_id: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          business_id?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          business_id: string
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          source: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          source?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          source?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      quotes: {
+        Row: {
+          business_id: string
+          client_email: string | null
+          client_name: string
+          created_at: string
+          customer_id: string | null
+          id: string
+          items: Json
+          notes: string | null
+          subtotal: number
+          title: string
+          total: number
+          updated_at: string
+          vat: number
+        }
+        Insert: {
+          business_id: string
+          client_email?: string | null
+          client_name: string
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          subtotal: number
+          title: string
+          total: number
+          updated_at?: string
+          vat: number
+        }
+        Update: {
+          business_id?: string
+          client_email?: string | null
+          client_name?: string
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          subtotal?: number
+          title?: string
+          total?: number
+          updated_at?: string
+          vat?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales: {
+        Row: {
+          amount: number
+          business_id: string
+          created_at: string
+          customer_id: string | null
+          date: string
+          description: string | null
+          id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          business_id: string
+          created_at?: string
+          customer_id?: string | null
+          date?: string
+          description?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          business_id?: string
+          created_at?: string
+          customer_id?: string | null
+          date?: string
+          description?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

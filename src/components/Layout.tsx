@@ -7,7 +7,7 @@ import SalesTracking from "./sales/SalesTracking";
 import ComplianceCenter from "./compliance/ComplianceCenter";
 import WebsiteTemplates from "./website/WebsiteTemplates";
 import BusinessTypeSelector from "./BusinessTypeSelector";
-import { User, BellRing, Menu, Sun, Moon } from "lucide-react";
+import { User, BellRing, Menu, Sun, Moon, Settings, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
@@ -16,21 +16,20 @@ import BusinessProfile from "./profile/BusinessProfile";
 import CustomerList from "./customers/CustomerList";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Switch } from "./ui/switch";
+import { useAuth } from "@/contexts/AuthContext";
+import { Progress } from "./ui/progress";
+import BusinessTypeChangeRequest from "./business/BusinessTypeChangeRequest";
+import { useNavigate } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 
 const Layout = () => {
   const [activeTab, setActiveTab] = useState("Dashboard");
-  const [businessType, setBusinessType] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const isMobile = useIsMobile();
-  
-  // Load business type from localStorage
-  useEffect(() => {
-    const storedBusinessType = localStorage.getItem("selectedBusinessType");
-    if (storedBusinessType) {
-      setBusinessType(storedBusinessType);
-    }
-  }, []);
+  const { user, profile, businessProfile, signOut } = useAuth();
+  const navigate = useNavigate();
   
   // Effect to apply dark mode class to document element
   useEffect(() => {
@@ -41,30 +40,58 @@ const Layout = () => {
     }
   }, [darkMode]);
   
+  const calculateProfileHealth = () => {
+    if (!businessProfile) return 0;
+    
+    let score = 0;
+    const totalFields = 5;
+    
+    if (businessProfile.business_name) score += 1;
+    if (businessProfile.email) score += 1;
+    if (businessProfile.phone) score += 1;
+    if (businessProfile.address) score += 1;
+    if (businessProfile.logo_url) score += 1;
+    
+    return Math.round((score / totalFields) * 100);
+  };
+  
+  const profileHealth = calculateProfileHealth();
+  const profileHealthColor = profileHealth < 40 ? "bg-red-500" : profileHealth < 70 ? "bg-yellow-500" : "bg-green-500";
+  
+  const getInitials = () => {
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase();
+    }
+    return user?.email?.substring(0, 2).toUpperCase() || "U";
+  };
+  
   const renderContent = () => {
-    if (!businessType) {
+    if (!businessProfile) {
       return (
         <div className="px-4 py-6">
-          <BusinessTypeSelector onSelectBusinessType={(type) => setBusinessType(type)} />
+          <BusinessTypeSelector onSelectBusinessType={(type) => {
+            // Navigate to profile page to complete business setup
+            navigate('/profile');
+          }} />
         </div>
       );
     }
     
     switch (activeTab) {
       case "Dashboard":
-        return <Dashboard businessType={businessType} />;
+        return <Dashboard businessType={businessProfile.business_type} />;
       case "Leads":
-        return <LeadManagement businessType={businessType} />;
+        return <LeadManagement businessType={businessProfile.business_type} />;
       case "Sales":
-        return <SalesTracking businessType={businessType} />;
+        return <SalesTracking businessType={businessProfile.business_type} />;
       case "Customers":
-        return <CustomerList businessType={businessType} />;
+        return <CustomerList businessType={businessProfile.business_type} />;
       case "Quotes":
-        return <QuoteGenerator businessType={businessType} />;
+        return <QuoteGenerator businessType={businessProfile.business_type} />;
       case "Compliance":
-        return <ComplianceCenter businessType={businessType} />;
+        return <ComplianceCenter businessType={businessProfile.business_type} />;
       case "Website":
-        return <WebsiteTemplates businessType={businessType} />;
+        return <WebsiteTemplates businessType={businessProfile.business_type} />;
       case "Settings":
         return (
           <div className="p-4">
@@ -83,6 +110,16 @@ const Layout = () => {
                       checked={darkMode} 
                       onCheckedChange={setDarkMode}
                     />
+                  </div>
+                </div>
+                
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-medium mb-3">Business Type</h3>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm">Current business type: <span className="font-medium">{businessProfile?.business_type || 'None'}</span></p>
+                    </div>
+                    <BusinessTypeChangeRequest />
                   </div>
                 </div>
                 
@@ -119,9 +156,9 @@ const Layout = () => {
           </div>
         );
       case "Profile":
-        return <BusinessProfile businessType={businessType} />;
+        return <BusinessProfile businessType={businessProfile.business_type} />;
       default:
-        return <Dashboard businessType={businessType} />;
+        return <Dashboard businessType={businessProfile.business_type} />;
     }
   };
 
@@ -152,6 +189,24 @@ const Layout = () => {
                     <span className="mr-1">💼</span> IMBILA
                   </div>
                 </div>
+                
+                {businessProfile && (
+                  <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                    <div className="font-medium">{businessProfile.business_name}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Profile Completeness:
+                      <div className="mt-1 flex items-center gap-2">
+                        <Progress 
+                          value={profileHealth} 
+                          className="h-2 flex-1" 
+                          indicatorClassName={profileHealthColor} 
+                        />
+                        <span className="text-xs font-medium">{profileHealth}%</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="py-4">
                   {sidebarItems.map((item) => (
                     <Button
@@ -166,6 +221,14 @@ const Layout = () => {
                       {item.name}
                     </Button>
                   ))}
+                  
+                  <Button
+                    variant="ghost"
+                    className={`w-full justify-start text-left px-4 py-2 ${darkMode ? 'hover:bg-gray-700 text-red-300' : 'hover:bg-gray-100 text-red-500'}`}
+                    onClick={signOut}
+                  >
+                    Sign Out
+                  </Button>
                   
                   {/* Dark mode toggle in sidebar */}
                   <div className={`px-4 py-3 mt-2 flex items-center justify-between ${darkMode ? 'border-t border-gray-700' : 'border-t border-gray-200'}`}>
@@ -185,13 +248,47 @@ const Layout = () => {
               <span className="mr-1">💼</span> IMBILA
             </div>
           </div>
+          
+          {businessProfile && (
+            <div className="flex-1 px-4 hidden md:block">
+              <div className="font-medium">{businessProfile.business_name}</div>
+              {profile && (
+                <div className="text-xs text-gray-500">
+                  Welcome back, {profile.first_name || user?.email}
+                </div>
+              )}
+            </div>
+          )}
+          
           <div className="flex items-center space-x-2">
             <Button variant="ghost" size="icon" className={darkMode ? 'text-white' : 'text-gray-600'}>
               <BellRing className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon" className={`${darkMode ? 'bg-gray-700' : 'bg-gray-100'} rounded-full ${darkMode ? 'text-white' : 'text-gray-600'}`}>
-              <User className="h-5 w-5" />
-            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className={`rounded-full overflow-hidden ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                  <Avatar>
+                    <AvatarImage src={profile?.avatar_url} alt={profile?.first_name || "User"} />
+                    <AvatarFallback>{getInitials()}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => navigate('/profile')}>
+                  <User className="mr-2 h-4 w-4" />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/settings')}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={signOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
@@ -199,6 +296,29 @@ const Layout = () => {
       {/* Main Content */}
       <main className={`flex-1 pt-14 pb-16 ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-50'}`}>
         <div className="container mx-auto max-w-4xl px-4 py-6">
+          {businessProfile && profileHealth < 70 && (
+            <div className={`mb-4 p-3 rounded-md ${profileHealth < 40 ? 'bg-red-50 border border-red-100 text-red-800' : 'bg-yellow-50 border border-yellow-100 text-yellow-800'}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium text-sm">Complete your business profile</h3>
+                  <p className="text-xs mt-0.5">
+                    Your business profile is {profileHealth}% complete. Add missing information to get the most out of IMBILA.
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => navigate('/profile')}>
+                  Complete Profile
+                </Button>
+              </div>
+              <div className="mt-2">
+                <Progress 
+                  value={profileHealth} 
+                  className="h-1.5" 
+                  indicatorClassName={profileHealthColor}
+                />
+              </div>
+            </div>
+          )}
+          
           {renderContent()}
         </div>
       </main>

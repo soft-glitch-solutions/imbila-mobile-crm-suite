@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface QuoteGeneratorProps {
   businessType: string;
@@ -22,6 +24,7 @@ interface QuoteItem {
 }
 
 const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
+  const { businessProfile } = useAuth();
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([
@@ -67,15 +70,39 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
     handleGenerate();
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!clientName) {
       toast.error("Please enter a client name before saving");
       return;
     }
     
-    // Here we would typically save to a database
-    // For now, we'll just show a success message
-    toast.success("Quote saved successfully!");
+    try {
+      if (!businessProfile) {
+        toast.error("Please complete your business profile before saving quotes");
+        return;
+      }
+      
+      const { data, error } = await supabase
+        .from('quotes')
+        .insert({
+          business_id: businessProfile.id,
+          title: `Quote for ${clientName}`,
+          client_name: clientName,
+          client_email: clientEmail,
+          items: quoteItems,
+          notes: notes,
+          subtotal: calculateSubtotal(),
+          vat: calculateVAT(),
+          total: calculateTotal()
+        })
+        .select();
+      
+      if (error) throw error;
+      
+      toast.success("Quote saved successfully!");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save quote");
+    }
   };
 
   const handleGenerate = () => {
@@ -86,6 +113,7 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
     
     // Generate quote logic would go here
     toast.success("Quote generated successfully!");
+    handleGeneratePDF();
   };
 
   const handleGeneratePDF = () => {
@@ -100,24 +128,65 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
     // Add company logo/header
     doc.setFontSize(20);
     doc.setTextColor(37, 99, 235); // imbila-blue
-    doc.text("IMBILA", 15, 20);
+    
+    // Add business information if available
+    if (businessProfile?.business_name) {
+      doc.text(businessProfile.business_name.toUpperCase(), 15, 20);
+    } else {
+      doc.text("IMBILA", 15, 20);
+    }
     
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
     doc.text("Professional Business Quote", 15, 28);
     
+    // Add business contact details if available
+    let yPos = 40;
+    if (businessProfile) {
+      if (businessProfile.logo_url) {
+        try {
+          // Add logic to include logo if needed
+          // This would require additional work with image loading in jsPDF
+        } catch(e) {
+          console.error("Error loading logo:", e);
+        }
+      }
+      
+      doc.setFontSize(10);
+      
+      if (businessProfile.email) {
+        doc.text(`Email: ${businessProfile.email}`, 15, yPos);
+        yPos += 5;
+      }
+      
+      if (businessProfile.phone) {
+        doc.text(`Phone: ${businessProfile.phone}`, 15, yPos);
+        yPos += 5;
+      }
+      
+      if (businessProfile.address) {
+        doc.text(`Address: ${businessProfile.address}`, 15, yPos);
+        yPos += 5;
+      }
+      
+      // Add some space after business details
+      yPos += 5;
+    } else {
+      yPos = 40;
+    }
+    
     // Add date and reference
     doc.setFontSize(10);
-    doc.text(`Date: ${currentDate}`, 15, 40);
-    doc.text(`Reference: QT-${Math.floor(Math.random() * 10000)}`, 15, 45);
+    doc.text(`Date: ${currentDate}`, 15, yPos);
+    doc.text(`Reference: QT-${Math.floor(Math.random() * 10000)}`, 15, yPos + 5);
     
     // Client information
     doc.setFontSize(12);
-    doc.text("Client Information:", 15, 55);
+    doc.text("Client Information:", 15, yPos + 15);
     doc.setFontSize(10);
-    doc.text(`Name: ${clientName}`, 15, 62);
+    doc.text(`Name: ${clientName}`, 15, yPos + 22);
     if (clientEmail) {
-      doc.text(`Email: ${clientEmail}`, 15, 67);
+      doc.text(`Email: ${clientEmail}`, 15, yPos + 27);
     }
     
     // Quote items table
@@ -129,7 +198,7 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
     ]);
     
     autoTable(doc, {
-      startY: 75,
+      startY: yPos + 35,
       head: [["Description", "Quantity", "Unit Price", "Total"]],
       body: tableRows,
       theme: 'striped',
@@ -160,7 +229,7 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       doc.text(
-        `Generated with IMBILA | ${currentDate}`,
+        `Generated with ${businessProfile?.business_name || "IMBILA"} | ${currentDate}`,
         doc.internal.pageSize.width / 2,
         doc.internal.pageSize.height - 10,
         { align: "center" }

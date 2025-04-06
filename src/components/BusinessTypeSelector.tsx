@@ -1,11 +1,11 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Briefcase, ShoppingBag, Building, Hammer, Book, Utensils } from "lucide-react";
 import { toast } from "sonner";
 
-interface BusinessType {
+export interface BusinessType {
   id: string;
   name: string;
   description: string;
@@ -13,7 +13,7 @@ interface BusinessType {
   features: string[];
 }
 
-const businessTypes: BusinessType[] = [
+export const businessTypes: BusinessType[] = [
   {
     id: "retail",
     name: "Retail Shop",
@@ -58,23 +58,40 @@ const businessTypes: BusinessType[] = [
   }
 ];
 
-const BusinessTypeSelector = ({ onSelectBusinessType }: { 
-  onSelectBusinessType: (type: string) => void 
+const BusinessTypeSelector = ({ 
+  onSelectBusinessType, 
+  displayOnly = false,
+  initialValue = null
+}: { 
+  onSelectBusinessType: (type: string) => void;
+  displayOnly?: boolean;
+  initialValue?: string | null;
 }) => {
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(initialValue);
+
+  useEffect(() => {
+    if (initialValue) {
+      setSelected(initialValue);
+    }
+  }, [initialValue]);
 
   const handleSelect = (businessType: string) => {
     setSelected(businessType);
     onSelectBusinessType(businessType);
-    toast.success(`${businessType} profile selected!`);
+    
+    if (!displayOnly) {
+      toast.success(`${businessTypes.find(type => type.id === businessType)?.name || businessType} profile selected!`);
+    }
   };
 
   return (
-    <div className="space-y-4 p-4">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-imbila-dark">Select Your Business Type</h2>
-        <p className="text-gray-500 mt-1">We'll customize your experience based on your selection</p>
-      </div>
+    <div className="space-y-4">
+      {!displayOnly && (
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-imbila-dark">Select Your Business Type</h2>
+          <p className="text-gray-500 mt-1">We'll customize your experience based on your selection</p>
+        </div>
+      )}
       
       <div className="grid grid-cols-2 gap-3">
         {businessTypes.map((type) => (

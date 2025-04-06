@@ -1,14 +1,49 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import BusinessTypeSelector from "@/components/BusinessTypeSelector";
-import { ChevronRight, ChevronLeft } from "lucide-react";
+import BusinessTypeSelector, { businessTypes } from "@/components/BusinessTypeSelector";
+import { ChevronRight, ChevronLeft, LogIn } from "lucide-react";
+import { AuthForm } from "@/components/auth/AuthForm";
+import { useAuth } from "@/contexts/AuthContext";
+import { BusinessProfileForm } from "@/components/business/BusinessProfileForm";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+const OnboardingStep = ({ 
+  children, 
+  step, 
+  currentStep, 
+}: { 
+  children: React.ReactNode, 
+  step: number, 
+  currentStep: number, 
+}) => {
+  if (step !== currentStep) return null;
+  return <div className="animate-fadeIn">{children}</div>;
+};
 
 const Onboarding = () => {
   const navigate = useNavigate();
+  const { user, businessProfile, loading } = useAuth();
   const [step, setStep] = useState(0);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
+  const [selectedBusinessType, setSelectedBusinessType] = useState<string | null>(null);
+  const [businessName, setBusinessName] = useState<string>("");
+  
+  // Check if the user has completed onboarding
+  useEffect(() => {
+    // If user is authenticated and has a business profile, go to dashboard
+    if (!loading && user && businessProfile) {
+      navigate("/dashboard");
+    }
+    
+    // If the user is authenticated but doesn't have a business profile,
+    // move to the step for creating a business profile
+    if (!loading && user && !businessProfile) {
+      setStep(3);
+    }
+  }, [user, businessProfile, loading, navigate]);
   
   const steps = [
     {
@@ -22,21 +57,44 @@ const Onboarding = () => {
       image: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&w=1000&q=80",
     },
     {
-      title: "On The Go",
-      description: "Access your business tools anytime, anywhere from your mobile device",
-      image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1000&q=80"
+      title: "Create an Account",
+      isAuthStep: true,
+    },
+    {
+      title: "Business Information",
+      isBusinessInfoStep: true,
     },
     {
       title: "Select Your Business Type",
-      description: "We'll customize your experience based on your business type",
       isBusinessTypeSelection: true,
     }
   ];
   
+  const handleAuthSuccess = () => {
+    setStep(3);
+  };
+  
+  const handleBusinessInfoSubmit = (data: any) => {
+    setBusinessName(data.business_name);
+    setStep(4);
+  };
+  
   const handleBusinessTypeSelected = (type: string) => {
-    // Store selected business type in localStorage for persistence
-    localStorage.setItem("selectedBusinessType", type);
-    navigate("/dashboard");
+    setSelectedBusinessType(type);
+    setTimeout(() => {
+      const businessTypeObj = businessTypes.find(t => t.id === type);
+      
+      if (user) {
+        // Create business profile
+        if (businessName && selectedBusinessType) {
+          // Navigate to dashboard, business profile will be created in the next step
+          navigate('/dashboard');
+        }
+      } else {
+        // No user yet, move to auth step
+        setStep(2);
+      }
+    }, 500);
   };
   
   const handleNext = () => {
@@ -52,11 +110,26 @@ const Onboarding = () => {
   };
   
   const handleSkip = () => {
-    setStep(steps.length - 1);
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      setStep(2); // Skip to auth step
+    }
   };
   
   const currentStep = steps[step];
+  const isAuthStep = step === 2;
+  const isBusinessInfoStep = step === 3;
+  const isBusinessTypeStep = step === 4;
   const isLastStep = step === steps.length - 1;
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-imbila-blue border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -76,12 +149,8 @@ const Onboarding = () => {
       
       <div className="flex-1 flex items-center justify-center p-4">
         <Card className="w-full max-w-md mx-auto overflow-hidden">
-          {currentStep.isBusinessTypeSelection ? (
-            <CardContent className="p-0">
-              <BusinessTypeSelector onSelectBusinessType={handleBusinessTypeSelected} />
-            </CardContent>
-          ) : (
-            <CardContent className="p-0">
+          <CardContent className="p-0">
+            <OnboardingStep step={0} currentStep={step}>
               <div className="relative pb-[56.25%] overflow-hidden">
                 <img 
                   src={currentStep.image} 
@@ -103,11 +172,9 @@ const Onboarding = () => {
                     )}
                   </div>
                   <div className="flex gap-2">
-                    {step < steps.length - 2 && (
-                      <Button variant="ghost" onClick={handleSkip}>
-                        Skip
-                      </Button>
-                    )}
+                    <Button variant="ghost" onClick={handleSkip}>
+                      {user ? "Go to Dashboard" : "Sign In"}
+                    </Button>
                     <Button onClick={handleNext}>
                       Next
                       <ChevronRight className="h-4 w-4 ml-2" />
@@ -115,8 +182,122 @@ const Onboarding = () => {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          )}
+            </OnboardingStep>
+            
+            <OnboardingStep step={1} currentStep={step}>
+              <div className="relative pb-[56.25%] overflow-hidden">
+                <img 
+                  src={currentStep.image} 
+                  alt={currentStep.title}
+                  className="absolute top-0 left-0 w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-6 space-y-4">
+                <h2 className="text-2xl font-bold text-imbila-dark">{currentStep.title}</h2>
+                <p className="text-gray-600">{currentStep.description}</p>
+                
+                <div className="flex justify-between pt-4">
+                  <div>
+                    <Button variant="outline" onClick={handlePrev}>
+                      <ChevronLeft className="h-4 w-4 mr-2" />
+                      Back
+                    </Button>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" onClick={handleSkip}>
+                      {user ? "Go to Dashboard" : "Sign In"}
+                    </Button>
+                    <Button onClick={handleNext}>
+                      Next
+                      <ChevronRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </OnboardingStep>
+            
+            <OnboardingStep step={2} currentStep={step}>
+              <div className="p-6 space-y-4">
+                <h2 className="text-2xl font-bold text-center mb-4">Create an Account</h2>
+                
+                <Tabs defaultValue={authMode} onValueChange={(value) => setAuthMode(value as 'signin' | 'signup')}>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                    <TabsTrigger value="signin">Sign In</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="signup" className="mt-4">
+                    <AuthForm mode="signup" onSuccess={handleAuthSuccess} />
+                  </TabsContent>
+                  <TabsContent value="signin" className="mt-4">
+                    <AuthForm mode="signin" onSuccess={handleAuthSuccess} />
+                  </TabsContent>
+                </Tabs>
+                
+                <div className="flex justify-between pt-4">
+                  <Button variant="outline" onClick={handlePrev}>
+                    <ChevronLeft className="h-4 w-4 mr-2" />
+                    Back
+                  </Button>
+                  
+                  {selectedBusinessType && (
+                    <div className="text-sm text-gray-500">
+                      Selected business type: <span className="font-medium">
+                        {businessTypes.find(t => t.id === selectedBusinessType)?.name || selectedBusinessType}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </OnboardingStep>
+            
+            <OnboardingStep step={3} currentStep={step}>
+              <div className="p-6 space-y-4">
+                <h2 className="text-2xl font-bold text-center mb-4">Business Information</h2>
+                
+                <div className="py-2">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium">Business Name</label>
+                      <input 
+                        type="text" 
+                        className="w-full p-2 border rounded mt-1" 
+                        value={businessName} 
+                        onChange={(e) => setBusinessName(e.target.value)}
+                        placeholder="Enter your business name"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end mt-4">
+                    <Button onClick={() => setStep(4)} disabled={!businessName}>
+                      Next
+                      <ChevronRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </OnboardingStep>
+            
+            <OnboardingStep step={4} currentStep={step}>
+              <div className="p-6 space-y-4">
+                <BusinessTypeSelector 
+                  onSelectBusinessType={(type) => {
+                    setSelectedBusinessType(type);
+                    // Create business profile
+                    if (user) {
+                      const { createBusinessProfile } = useAuth();
+                      createBusinessProfile({
+                        business_name: businessName,
+                        business_type: type
+                      }).then(() => {
+                        navigate('/dashboard');
+                      });
+                    }
+                  }} 
+                />
+              </div>
+            </OnboardingStep>
+          </CardContent>
         </Card>
       </div>
     </div>
