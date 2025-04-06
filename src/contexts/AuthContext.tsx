@@ -138,8 +138,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (error) throw error;
       
-      toast.success("Sign up successful!");
-      return data;
+      toast.success("Sign up successful! Please check your email for confirmation.");
     } catch (error: any) {
       toast.error(error.message || "Sign up failed");
       throw error;
@@ -156,7 +155,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
       
       toast.success("Signed in successfully!");
-      return data;
     } catch (error: any) {
       toast.error(error.message || "Sign in failed");
       throw error;
@@ -217,7 +215,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const value = {
+  const value: AuthContextType = {
     user,
     session,
     profile,

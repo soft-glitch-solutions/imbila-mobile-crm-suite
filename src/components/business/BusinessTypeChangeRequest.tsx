@@ -2,20 +2,15 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
+import BusinessTypeSelector from "@/components/BusinessTypeSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import BusinessTypeSelector from "@/components/BusinessTypeSelector";
 
 const BusinessTypeChangeRequest = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { businessProfile, refreshBusinessProfile } = useAuth();
+  const { businessProfile } = useAuth();
   const [selectedBusinessType, setSelectedBusinessType] = useState<string | null>(null);
   
   const handleRequestChange = async () => {
@@ -30,6 +25,7 @@ const BusinessTypeChangeRequest = () => {
           business_id: businessProfile.id,
           current_type: businessProfile.business_type,
           requested_type: selectedBusinessType,
+          status: 'pending'
         });
       
       if (error) throw error;

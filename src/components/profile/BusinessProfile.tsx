@@ -1,4 +1,3 @@
-
 import { useAuth } from "@/contexts/AuthContext";
 import { BusinessProfileForm } from "../business/BusinessProfileForm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
@@ -89,19 +88,23 @@ const BusinessProfile = ({ businessType }: BusinessProfileProps) => {
         avatarUrl = await uploadAvatar();
       }
       
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          ...data,
-          avatar_url: avatarUrl || profile?.avatar_url,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user?.id);
-      
-      if (error) throw error;
-      
-      await refreshProfile();
-      toast.success("Profile updated successfully");
+      // Update profile with improved typing
+      if (user) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            first_name: data.first_name,
+            last_name: data.last_name,
+            avatar_url: avatarUrl || profile?.avatar_url,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+        
+        if (error) throw error;
+        
+        await refreshProfile();
+        toast.success("Profile updated successfully");
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to update profile");
     } finally {

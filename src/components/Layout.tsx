@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import MobileNavbar from "./shared/MobileNavbar";
 import Dashboard from "./Dashboard";
@@ -31,7 +30,6 @@ const Layout = () => {
   const { user, profile, businessProfile, signOut } = useAuth();
   const navigate = useNavigate();
   
-  // Effect to apply dark mode class to document element
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -70,7 +68,6 @@ const Layout = () => {
       return (
         <div className="px-4 py-6">
           <BusinessTypeSelector onSelectBusinessType={(type) => {
-            // Navigate to profile page to complete business setup
             navigate('/profile');
           }} />
         </div>
@@ -162,7 +159,6 @@ const Layout = () => {
     }
   };
 
-  // Sidebar menu items
   const sidebarItems = [
     { name: "Dashboard", icon: "home" },
     { name: "Website", icon: "file" },
@@ -173,7 +169,6 @@ const Layout = () => {
 
   return (
     <div className={`min-h-full flex flex-col ${darkMode ? 'dark bg-gray-900 text-white' : 'bg-gray-50'}`}>
-      {/* Header */}
       <header className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b fixed top-0 left-0 right-0 z-20`}>
         <div className="px-4 h-14 flex items-center justify-between">
           <div className="flex items-center">
@@ -230,7 +225,6 @@ const Layout = () => {
                     Sign Out
                   </Button>
                   
-                  {/* Dark mode toggle in sidebar */}
                   <div className={`px-4 py-3 mt-2 flex items-center justify-between ${darkMode ? 'border-t border-gray-700' : 'border-t border-gray-200'}`}>
                     <div className="flex items-center space-x-2">
                       {darkMode ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
@@ -254,7 +248,7 @@ const Layout = () => {
               <div className="font-medium">{businessProfile.business_name}</div>
               {profile && (
                 <div className="text-xs text-gray-500">
-                  Welcome back, {profile.first_name || user?.email}
+                  Welcome back, {profile.first_name || user?.email?.split('@')[0] || 'User'}
                 </div>
               )}
             </div>
@@ -293,7 +287,6 @@ const Layout = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className={`flex-1 pt-14 pb-16 ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-50'}`}>
         <div className="container mx-auto max-w-4xl px-4 py-6">
           {businessProfile && profileHealth < 70 && (
@@ -323,12 +316,10 @@ const Layout = () => {
         </div>
       </main>
 
-      {/* Mobile Navigation */}
       <MobileNavbar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         darkMode={darkMode} 
-        // Add the Customers tab between Sales and Quotes
         extraTabs={[
           { id: "Customers", label: "Customers", icon: "user" }
         ]}

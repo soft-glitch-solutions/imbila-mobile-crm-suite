@@ -7,8 +7,8 @@ import BusinessTypeSelector, { businessTypes } from "@/components/BusinessTypeSe
 import { ChevronRight, ChevronLeft, LogIn } from "lucide-react";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { useAuth } from "@/contexts/AuthContext";
-import { BusinessProfileForm } from "@/components/business/BusinessProfileForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 
 const OnboardingStep = ({ 
   children, 
@@ -25,11 +25,12 @@ const OnboardingStep = ({
 
 const Onboarding = () => {
   const navigate = useNavigate();
-  const { user, businessProfile, loading } = useAuth();
+  const { user, businessProfile, loading, createBusinessProfile } = useAuth();
   const [step, setStep] = useState(0);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
   const [selectedBusinessType, setSelectedBusinessType] = useState<string | null>(null);
   const [businessName, setBusinessName] = useState<string>("");
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   
   // Check if the user has completed onboarding
   useEffect(() => {
@@ -40,10 +41,10 @@ const Onboarding = () => {
     
     // If the user is authenticated but doesn't have a business profile,
     // move to the step for creating a business profile
-    if (!loading && user && !businessProfile) {
+    if (!loading && user && !businessProfile && !showEmailConfirmation) {
       setStep(3);
     }
-  }, [user, businessProfile, loading, navigate]);
+  }, [user, businessProfile, loading, navigate, showEmailConfirmation]);
   
   const steps = [
     {
@@ -71,7 +72,11 @@ const Onboarding = () => {
   ];
   
   const handleAuthSuccess = () => {
-    setStep(3);
+    if (authMode === 'signup') {
+      setShowEmailConfirmation(true);
+    } else {
+      setStep(3);
+    }
   };
   
   const handleBusinessInfoSubmit = (data: any) => {
@@ -79,22 +84,28 @@ const Onboarding = () => {
     setStep(4);
   };
   
-  const handleBusinessTypeSelected = (type: string) => {
+  const handleBusinessTypeSelected = async (type: string) => {
     setSelectedBusinessType(type);
-    setTimeout(() => {
-      const businessTypeObj = businessTypes.find(t => t.id === type);
-      
-      if (user) {
+    
+    if (user) {
+      try {
         // Create business profile
-        if (businessName && selectedBusinessType) {
-          // Navigate to dashboard, business profile will be created in the next step
+        if (businessName && type) {
+          await createBusinessProfile({
+            business_name: businessName,
+            business_type: type
+          });
+          toast.success("Business profile created successfully!");
           navigate('/dashboard');
         }
-      } else {
-        // No user yet, move to auth step
-        setStep(2);
+      } catch (error) {
+        console.error("Error creating business profile:", error);
+        toast.error("Failed to create business profile. Please try again.");
       }
-    }, 500);
+    } else {
+      // No user yet, move to auth step
+      setStep(2);
+    }
   };
   
   const handleNext = () => {
@@ -117,6 +128,12 @@ const Onboarding = () => {
     }
   };
   
+  const handleContinueToLogin = () => {
+    setAuthMode('signin');
+    setShowEmailConfirmation(false);
+    setStep(2);
+  };
+  
   const currentStep = steps[step];
   const isAuthStep = step === 2;
   const isBusinessInfoStep = step === 3;
@@ -127,6 +144,29 @@ const Onboarding = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-imbila-blue border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+  
+  if (showEmailConfirmation) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-md mx-auto">
+          <CardContent className="p-6 space-y-4">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-imbila-dark">Check Your Email</h2>
+              <p className="text-gray-600 mt-2">We've sent a confirmation link to your email address.</p>
+              <p className="text-gray-600">Please verify your email to continue.</p>
+            </div>
+            <div className="pt-4 text-center">
+              <Button onClick={handleContinueToLogin} className="w-full">
+                Continue to Login
+                <LogIn className="h-4 w-4 ml-2" />
+              </Button>
+              <p className="text-sm text-gray-500 mt-2">Already confirmed? Click the button above to sign in.</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -281,19 +321,7 @@ const Onboarding = () => {
             <OnboardingStep step={4} currentStep={step}>
               <div className="p-6 space-y-4">
                 <BusinessTypeSelector 
-                  onSelectBusinessType={(type) => {
-                    setSelectedBusinessType(type);
-                    // Create business profile
-                    if (user) {
-                      const { createBusinessProfile } = useAuth();
-                      createBusinessProfile({
-                        business_name: businessName,
-                        business_type: type
-                      }).then(() => {
-                        navigate('/dashboard');
-                      });
-                    }
-                  }} 
+                  onSelectBusinessType={handleBusinessTypeSelected}
                 />
               </div>
             </OnboardingStep>
