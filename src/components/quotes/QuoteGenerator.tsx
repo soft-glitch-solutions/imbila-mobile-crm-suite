@@ -255,7 +255,7 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
   return (
     <div className="space-y-6 pb-20">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-imbila-dark">Create Quote</h2>
+        <h2 className="text-2xl font-bold ">Create Quote</h2>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -389,7 +389,7 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
           </Card>
 
           {/* Bottom Action Buttons */}
-          <div className="fixed bottom-16 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 p-4 flex gap-2 justify-center">
+          <div className="fixed bottom-16 left-0 right-0  dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 p-4 flex gap-2 justify-center">
             <Button 
               type="button" 
               variant="outline" 

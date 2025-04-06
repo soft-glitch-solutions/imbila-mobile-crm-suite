@@ -123,7 +123,7 @@ const WebsiteTemplates = ({ businessType }: WebsiteTemplatesProps) => {
   return (
     <div className="space-y-6 pb-20">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-imbila-dark">Website Templates</h2>
+        <h2 className="text-xl font-bold ">Website Templates</h2>
         <div className="flex border rounded-md overflow-hidden">
           <Button
             variant="ghost"
@@ -191,7 +191,7 @@ const WebsiteTemplates = ({ businessType }: WebsiteTemplatesProps) => {
 
       <div className="mt-10 bg-gray-50 border rounded-lg p-4">
         <div className="text-center">
-          <h3 className="text-lg font-bold text-imbila-dark mb-2">Need a custom website?</h3>
+          <h3 className="text-lg font-bold  mb-2">Need a custom website?</h3>
           <p className="text-gray-600 text-sm mb-4">We can create a unique website for your business.</p>
           <Button className="bg-imbila-purple hover:bg-purple-700 text-sm">
             Contact for Custom Design

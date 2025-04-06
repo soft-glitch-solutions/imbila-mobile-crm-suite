@@ -88,7 +88,7 @@ const BusinessTypeSelector = ({
     <div className="space-y-4">
       {!displayOnly && (
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-imbila-dark">Select Your Business Type</h2>
+          <h2 className="text-2xl font-bold ">Select Your Business Type</h2>
           <p className="text-gray-500 mt-1">We'll customize your experience based on your selection</p>
         </div>
       )}

@@ -169,7 +169,7 @@ const Layout = () => {
 
   return (
     <div className={`min-h-full flex flex-col ${darkMode ? 'dark bg-gray-900 text-white' : 'bg-gray-50'}`}>
-      <header className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b fixed top-0 left-0 right-0 z-20`}>
+      <header className={`${darkMode ? 'bg-gray-800 border-gray-700' : ' border-gray-200'} border-b fixed top-0 left-0 right-0 z-20`}>
         <div className="px-4 h-14 flex items-center justify-between">
           <div className="flex items-center">
             <Sheet>

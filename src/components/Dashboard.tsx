@@ -92,7 +92,7 @@ const Dashboard = ({ businessType }: DashboardProps) => {
   return (
     <div className="space-y-6 pb-20">
       <div>
-        <h2 className="text-xl font-bold text-imbila-dark">
+        <h2 className="text-xl font-bold ">
           {businessProfile?.business_name || "Business Dashboard"}
         </h2>
         <p className="text-sm text-gray-500 mt-1">{getWelcomeMessage()}</p>

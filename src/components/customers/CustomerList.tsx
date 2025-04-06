@@ -105,7 +105,7 @@ const CustomerList = ({ businessType }: CustomerListProps) => {
   return (
     <div className="space-y-6 pb-20">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-imbila-dark">Customers</h2>
+        <h2 className="text-2xl font-bold ">Customers</h2>
         <Button className="bg-imbila-blue hover:bg-blue-700" onClick={handleAddCustomer}>
           <Plus className="h-4 w-4 mr-1" /> Add Customer
         </Button>

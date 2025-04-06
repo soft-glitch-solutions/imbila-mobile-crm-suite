@@ -160,7 +160,7 @@ useEffect(() => {
         <Card className="w-full max-w-md mx-auto">
           <CardContent className="p-6 space-y-4">
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-imbila-dark">Check Your Email</h2>
+              <h2 className="text-2xl font-bold ">Check Your Email</h2>
               <p className="text-gray-600 mt-2">We've sent a confirmation link to your email address.</p>
               <p className="text-gray-600">Please verify your email to continue.</p>
             </div>
@@ -205,7 +205,7 @@ useEffect(() => {
                 />
               </div>
               <div className="p-6 space-y-4">
-                <h2 className="text-2xl font-bold text-imbila-dark">{currentStep.title}</h2>
+                <h2 className="text-2xl font-bold ">{currentStep.title}</h2>
                 <p className="text-gray-600">{currentStep.description}</p>
                 
                 <div className="flex justify-between pt-4">
@@ -239,7 +239,7 @@ useEffect(() => {
                 />
               </div>
               <div className="p-6 space-y-4">
-                <h2 className="text-2xl font-bold text-imbila-dark">{currentStep.title}</h2>
+                <h2 className="text-2xl font-bold ">{currentStep.title}</h2>
                 <p className="text-gray-600">{currentStep.description}</p>
                 
                 <div className="flex justify-between pt-4">

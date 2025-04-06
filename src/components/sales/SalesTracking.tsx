@@ -97,7 +97,7 @@ const SalesTracking = ({ businessType }: SalesTrackingProps) => {
   return (
     <div className="space-y-6 pb-20">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-imbila-dark">Sales Tracking</h2>
+        <h2 className="text-2xl font-bold ">Sales Tracking</h2>
         <Button className="bg-imbila-blue hover:bg-blue-700" onClick={handleNewSale}>
           <Plus className="h-4 w-4 mr-1" /> New Sale
         </Button>

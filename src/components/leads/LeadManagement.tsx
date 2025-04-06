@@ -144,7 +144,7 @@ const LeadManagement = ({ businessType }: LeadManagementProps) => {
   return (
     <div className="space-y-6 pb-20">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-imbila-dark">Lead Management</h2>
+        <h2 className="text-2xl font-bold ">Lead Management</h2>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-imbila-blue hover:bg-blue-700">
