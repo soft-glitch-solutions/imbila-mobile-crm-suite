@@ -1,4 +1,3 @@
-
 import { Navigate, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
@@ -27,15 +26,23 @@ export default function AppRoutes() {
       <Route path="/" element={<AuthGuard><Layout /></AuthGuard>}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard businessType="" />} />
+        
         <Route path="leads" element={<LeadManagement businessType="" />} />
         <Route path="leads/:id" element={<LeadDetails />} />
+        <Route path="leads/new" element={<div>New Lead Page</div>} />
+        
         <Route path="sales" element={<SalesTracking businessType="" />} />
         <Route path="sales/:id" element={<SaleDetails />} />
+        <Route path="sales/new" element={<div>New Sale Page</div>} />
+        
         <Route path="customers" element={<CustomerList businessType="" />} />
         <Route path="customers/:id" element={<CustomerDetails />} />
+        <Route path="customers/new" element={<div>New Customer Page</div>} />
+        
         <Route path="quotes" element={<QuoteHistory />} />
         <Route path="quotes/new" element={<QuoteGenerator businessType="" />} />
         <Route path="quotes/:id" element={<QuoteGenerator businessType="" />} />
+        
         <Route path="compliance" element={<ComplianceCenter businessType="" />} />
         <Route path="website" element={<WebsiteTemplateSelector />} />
         <Route path="profile" element={<BusinessProfile businessType="" />} />

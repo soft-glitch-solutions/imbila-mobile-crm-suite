@@ -23,7 +23,7 @@ interface SaleItem {
 interface Sale {
   id: string;
   business_id: string;
-  customer_id: string;
+  customer_id: string | null;
   customer_name: string;
   total: number;
   status: string;
@@ -56,7 +56,21 @@ const SaleDetails = () => {
           
         if (error) throw error;
         
-        setSale(data);
+        // Transform the database record to match our Sale interface
+        const saleData: Sale = {
+          id: data.id,
+          business_id: data.business_id,
+          customer_id: data.customer_id,
+          customer_name: data.customer_name || '',
+          total: data.amount || 0,
+          status: data.status,
+          notes: data.description || '',
+          items: data.items ? JSON.parse(data.items) : [],
+          created_at: data.created_at,
+          updated_at: data.updated_at
+        };
+        
+        setSale(saleData);
       } catch (error) {
         console.error('Error fetching sale:', error);
         toast.error('Failed to load sale information');
@@ -86,8 +100,11 @@ const SaleDetails = () => {
       const { error } = await supabase
         .from('sales')
         .update({ 
-          ...sale,
-          total,
+          customer_name: sale.customer_name,
+          amount: total,
+          status: sale.status,
+          description: sale.notes,
+          items: JSON.stringify(sale.items),
           updated_at: new Date().toISOString()
         })
         .eq('id', sale.id);

@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowUp, ArrowDown, Users, Briefcase, CreditCard, Activity, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -5,13 +6,30 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 interface DashboardProps {
   businessType: string;
 }
 
+interface Lead {
+  id: string;
+  name: string;
+  status: string;
+  created_at: string;
+}
+
+interface Task {
+  id: number;
+  title: string;
+  priority: string;
+}
+
 const Dashboard = ({ businessType }: DashboardProps) => {
   const { profile, businessProfile } = useAuth();
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  
   const [dashboardData, setDashboardData] = useState({
     leads: {
       total: 0,
@@ -19,54 +37,122 @@ const Dashboard = ({ businessType }: DashboardProps) => {
       conversion: 0,
     },
     sales: {
-      total: "R0",
+      total: 0,
       change: 0,
-      target: "R30,000",
+      target: 30000,
       progress: 0
     },
     expenses: {
-      total: "R0",
+      total: 0,
       change: 0
     },
-    tasks: [] as { id: number; title: string; priority: string }[],
-    recentLeads: [] as { id: number; name: string; company: string; status: string; date: string }[]
+    tasks: [] as Task[],
+    recentLeads: [] as Lead[]
   });
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       if (!businessProfile) return;
       
-      // Fetch real data from Supabase
+      setIsLoading(true);
+      
       try {
-        // Sample data for now - in a production app, this would be real data from API
+        // Fetch leads data
+        const { data: leadsData, error: leadsError } = await supabase
+          .from('leads')
+          .select('*')
+          .eq('business_id', businessProfile.id);
+          
+        if (leadsError) throw leadsError;
+        
+        // Fetch sales data
+        const { data: salesData, error: salesError } = await supabase
+          .from('sales')
+          .select('*')
+          .eq('business_id', businessProfile.id);
+          
+        if (salesError) throw salesError;
+        
+        // Calculate dashboard metrics
+        const allLeads = leadsData || [];
+        const newLeads = allLeads.filter(lead => lead.status === 'new').length;
+        const qualifiedLeads = allLeads.filter(lead => 
+          ['qualified', 'proposal', 'negotiation', 'won'].includes(lead.status)
+        ).length;
+        
+        const conversionRate = allLeads.length > 0 
+          ? Math.round((qualifiedLeads / allLeads.length) * 100) 
+          : 0;
+        
+        const allSales = salesData || [];
+        const totalSales = allSales.reduce((sum, sale) => sum + (sale.amount || 0), 0);
+        
+        // Get previous month sales for comparison
+        const currentDate = new Date();
+        const lastMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+        
+        const previousMonthSales = allSales
+          .filter(sale => {
+            const saleDate = new Date(sale.date);
+            return saleDate.getMonth() === lastMonth.getMonth() && 
+                  saleDate.getFullYear() === lastMonth.getFullYear();
+          })
+          .reduce((sum, sale) => sum + (sale.amount || 0), 0);
+          
+        const currentMonthSales = allSales
+          .filter(sale => {
+            const saleDate = new Date(sale.date);
+            return saleDate.getMonth() === currentDate.getMonth() && 
+                  saleDate.getFullYear() === currentDate.getFullYear();
+          })
+          .reduce((sum, sale) => sum + (sale.amount || 0), 0);
+        
+        // Calculate percentage change
+        const salesChange = previousMonthSales > 0 
+          ? Math.round(((currentMonthSales - previousMonthSales) / previousMonthSales) * 100)
+          : 0;
+        
+        // Calculate progress towards target
+        const target = 30000; // Example target
+        const progress = totalSales > 0 
+          ? Math.min(Math.round((totalSales / target) * 100), 100)
+          : 0;
+        
+        // Get recent leads
+        const recentLeads = [...allLeads]
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 5);
+        
+        // Sample tasks - in a real app, you would fetch these from a tasks table
+        const tasks = [
+          { id: 1, title: "Follow up with new leads", priority: "high" },
+          { id: 2, title: "Update business profile", priority: "medium" },
+          { id: 3, title: "Review sales performance", priority: "low" }
+        ];
+        
         setDashboardData({
           leads: {
-            total: 28,
-            new: 5,
-            conversion: 32,
+            total: allLeads.length,
+            new: newLeads,
+            conversion: conversionRate,
           },
           sales: {
-            total: "R24,500",
-            change: 12.5,
-            target: "R30,000",
-            progress: 82
+            total: totalSales,
+            change: salesChange,
+            target,
+            progress
           },
           expenses: {
-            total: "R8,750",
+            total: totalSales * 0.35, // Example: expenses are 35% of sales
             change: -5.2
           },
-          tasks: [
-            { id: 1, title: "Follow up with John about quote", priority: "high" },
-            { id: 2, title: "Renew business license", priority: "medium" },
-            { id: 3, title: "Update website content", priority: "low" }
-          ],
-          recentLeads: [
-            { id: 1, name: "Sarah Johnson", company: "Tech Solutions", status: "New", date: "Today" },
-            { id: 2, name: "Michael Brown", company: "Brown Consulting", status: "Contacted", date: "Yesterday" },
-          ]
+          tasks,
+          recentLeads
         });
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -89,6 +175,14 @@ const Dashboard = ({ businessType }: DashboardProps) => {
     return `${greeting}, ${fullName}`;
   };
 
+  const handleNavigateToLead = (id: string) => {
+    navigate(`/leads/${id}`);
+  };
+
+  if (isLoading) {
+    return <div className="text-center py-10">Loading dashboard data...</div>;
+  }
+
   return (
     <div className="space-y-6 pb-20">
       <div>
@@ -98,7 +192,7 @@ const Dashboard = ({ businessType }: DashboardProps) => {
         <p className="text-sm text-gray-500 mt-1">{getWelcomeMessage()}</p>
       </div>
 
-      {/* Rest of the dashboard content */}
+      {/* Dashboard content */}
       <div className="grid grid-cols-2 gap-4">
         <Card>
           <CardHeader className="pb-2">
@@ -109,7 +203,7 @@ const Dashboard = ({ businessType }: DashboardProps) => {
               <div className="text-2xl font-bold">{dashboardData.leads.total}</div>
               <div className="flex items-center text-xs font-medium text-green-600">
                 <ArrowUp className="h-3 w-3 mr-1" />
-                {dashboardData.leads.new}
+                {dashboardData.leads.new} new
               </div>
             </div>
             <div className="mt-2 text-xs text-gray-500">
@@ -124,7 +218,9 @@ const Dashboard = ({ businessType }: DashboardProps) => {
           </CardHeader>
           <CardContent>
             <div className="flex items-end justify-between">
-              <div className="text-2xl font-bold">{dashboardData.sales.total}</div>
+              <div className="text-2xl font-bold">
+                R{dashboardData.sales.total.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+              </div>
               <div className={`flex items-center text-xs font-medium ${dashboardData.sales.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {dashboardData.sales.change >= 0 ? (
                   <ArrowUp className="h-3 w-3 mr-1" />
@@ -146,7 +242,9 @@ const Dashboard = ({ businessType }: DashboardProps) => {
           </CardHeader>
           <CardContent>
             <div className="flex items-end justify-between">
-              <div className="text-2xl font-bold">{dashboardData.expenses.total}</div>
+              <div className="text-2xl font-bold">
+                R{dashboardData.expenses.total.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+              </div>
               <div className={`flex items-center text-xs font-medium ${dashboardData.expenses.change <= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {dashboardData.expenses.change <= 0 ? (
                   <ArrowDown className="h-3 w-3 mr-1" />
@@ -168,14 +266,18 @@ const Dashboard = ({ businessType }: DashboardProps) => {
           </CardHeader>
           <CardContent>
             <div className="flex items-end justify-between">
-              <div className="text-2xl font-bold">R15,750</div>
+              <div className="text-2xl font-bold">
+                R{(dashboardData.sales.total - dashboardData.expenses.total).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+              </div>
               <div className="flex items-center text-xs font-medium text-green-600">
                 <ArrowUp className="h-3 w-3 mr-1" />
-                18.3%
+                {dashboardData.sales.total > 0 ? 
+                  Math.round(((dashboardData.sales.total - dashboardData.expenses.total) / dashboardData.sales.total) * 100) : 0}%
               </div>
             </div>
             <div className="mt-2 text-xs text-gray-500">
-              64% margin
+              {dashboardData.sales.total > 0 ? 
+                Math.round(((dashboardData.sales.total - dashboardData.expenses.total) / dashboardData.sales.total) * 100) : 0}% margin
             </div>
           </CardContent>
         </Card>
@@ -189,19 +291,24 @@ const Dashboard = ({ businessType }: DashboardProps) => {
           {dashboardData.recentLeads.length > 0 ? (
             <div className="space-y-3">
               {dashboardData.recentLeads.map((lead) => (
-                <div key={lead.id} className="flex items-center justify-between">
+                <div 
+                  key={lead.id} 
+                  className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 rounded-md"
+                  onClick={() => handleNavigateToLead(lead.id)}
+                >
                   <div>
                     <div className="font-medium">{lead.name}</div>
-                    <div className="text-xs text-gray-500">{lead.company}</div>
+                    <div className="text-xs text-gray-500">
+                      {new Date(lead.created_at).toLocaleDateString()}
+                    </div>
                   </div>
                   <div className="flex items-center">
                     <div className="mr-2">
                       <div className={`text-xs px-2 py-0.5 rounded-full ${
-                        lead.status === "New" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"
+                        lead.status === "new" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"
                       }`}>
-                        {lead.status}
+                        {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1 text-right">{lead.date}</div>
                     </div>
                     <Button variant="ghost" size="icon" className="h-7 w-7">
                       <ChevronRight className="h-4 w-4" />
@@ -209,7 +316,12 @@ const Dashboard = ({ businessType }: DashboardProps) => {
                   </div>
                 </div>
               ))}
-              <Button variant="outline" size="sm" className="w-full mt-2 text-xs">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full mt-2 text-xs"
+                onClick={() => navigate('/leads')}
+              >
                 View All Leads
               </Button>
             </div>

@@ -1,5 +1,6 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,16 +8,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Plus, Mail, FileText, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Customer {
-  id: number;
+  id: string;
   name: string;
   email: string;
   phone: string;
-  totalSpent: string;
-  invoicesDue: number;
-  quotesActive: number;
-  lastPurchase: string;
+  created_at: string;
 }
 
 interface CustomerListProps {
@@ -26,81 +26,64 @@ interface CustomerListProps {
 const CustomerList = ({ businessType }: CustomerListProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const navigate = useNavigate();
+  const { businessProfile } = useAuth();
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Sample data
-  const customers: Customer[] = [
-    {
-      id: 1,
-      name: "Tech Solutions Ltd",
-      email: "contact@techsolutions.com",
-      phone: "(011) 555-1234",
-      totalSpent: "R42,500",
-      invoicesDue: 0,
-      quotesActive: 1,
-      lastPurchase: "2025-04-01",
-    },
-    {
-      id: 2,
-      name: "Brown Consulting",
-      email: "info@brownconsulting.com",
-      phone: "(012) 555-5678",
-      totalSpent: "R28,000",
-      invoicesDue: 1,
-      quotesActive: 0,
-      lastPurchase: "2025-03-28",
-    },
-    {
-      id: 3,
-      name: "Innovate Inc",
-      email: "hello@innovate.com",
-      phone: "(021) 555-9012",
-      totalSpent: "R65,750",
-      invoicesDue: 2,
-      quotesActive: 1,
-      lastPurchase: "2025-03-25",
-    },
-    {
-      id: 4,
-      name: "Wilson Group",
-      email: "contact@wilsongroup.com",
-      phone: "(031) 555-3456",
-      totalSpent: "R18,300",
-      invoicesDue: 0,
-      quotesActive: 0,
-      lastPurchase: "2025-03-20",
-    },
-    {
-      id: 5,
-      name: "Creative Solutions",
-      email: "info@creativesolutions.com",
-      phone: "(041) 555-7890",
-      totalSpent: "R8,750",
-      invoicesDue: 1,
-      quotesActive: 2,
-      lastPurchase: "2025-03-15",
-    }
-  ];
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      if (!businessProfile) return;
+      
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('business_id', businessProfile.id);
+        
+        if (error) throw error;
+        
+        setCustomers(data || []);
+      } catch (error) {
+        console.error('Error fetching customers:', error);
+        toast.error('Failed to load customers data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchCustomers();
+  }, [businessProfile]);
 
   const filteredCustomers = customers.filter((customer) =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email.toLowerCase().includes(searchTerm.toLowerCase())
+    customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    customer.phone?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleAddCustomer = () => {
-    toast.info("Add customer form would open here");
+    // Navigate to a new customer form in a real app
+    navigate("/customers/new");
   };
 
-  const handleViewCustomer = (customerId: number) => {
-    toast.info(`Viewing customer ${customerId} details`);
+  const handleViewCustomer = (customerId: string) => {
+    navigate(`/customers/${customerId}`);
   };
 
-  const handleViewInvoices = (customerId: number) => {
+  const handleViewInvoices = (customerId: string) => {
+    // In a real app, navigate to customer's invoices
     toast.info(`Viewing invoices for customer ${customerId}`);
   };
 
-  const handleViewQuotes = (customerId: number) => {
+  const handleViewQuotes = (customerId: string) => {
+    // In a real app, navigate to customer's quotes
     toast.info(`Viewing quotes for customer ${customerId}`);
   };
+
+  if (isLoading) {
+    return <div className="text-center py-10">Loading customers data...</div>;
+  }
 
   return (
     <div className="space-y-6 pb-20">
@@ -121,7 +104,7 @@ const CustomerList = ({ businessType }: CustomerListProps) => {
         />
       </div>
 
-      <Tabs defaultValue="all">
+      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex justify-start overflow-auto">
           <TabsTrigger value="all">All Customers</TabsTrigger>
           <TabsTrigger value="active">Active</TabsTrigger>
@@ -136,37 +119,41 @@ const CustomerList = ({ businessType }: CustomerListProps) => {
                   <CardContent className="p-4">
                     <div className="flex flex-col h-full">
                       <div className="mb-2">
-                        <h3 className="font-medium">{customer.name}</h3>
-                        <p className="text-sm text-gray-500">{customer.email}</p>
-                        <p className="text-sm text-gray-500">{customer.phone}</p>
+                        <h3 className="font-medium">{customer.name || 'Unknown'}</h3>
+                        <p className="text-sm text-gray-500">{customer.email || 'No email'}</p>
+                        <p className="text-sm text-gray-500">{customer.phone || 'No phone'}</p>
                       </div>
                       
                       <div className="flex justify-between text-sm my-2">
-                        <span>Total Spent:</span>
-                        <span className="font-medium">{customer.totalSpent}</span>
-                      </div>
-                      
-                      <div className="flex space-x-2 my-2">
-                        {customer.invoicesDue > 0 && (
-                          <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200">
-                            {customer.invoicesDue} {customer.invoicesDue === 1 ? 'Invoice' : 'Invoices'} Due
-                          </Badge>
-                        )}
-                        {customer.quotesActive > 0 && (
-                          <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-200">
-                            {customer.quotesActive} {customer.quotesActive === 1 ? 'Quote' : 'Quotes'} Active
-                          </Badge>
-                        )}
+                        <span>Added:</span>
+                        <span className="font-medium">
+                          {new Date(customer.created_at).toLocaleDateString()}
+                        </span>
                       </div>
                       
                       <div className="mt-auto pt-3 border-t grid grid-cols-3 gap-1">
-                        <Button variant="ghost" size="sm" className="w-full" onClick={() => handleViewCustomer(customer.id)}>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full"
+                          onClick={() => handleViewCustomer(customer.id)}
+                        >
                           <User className="h-4 w-4 mr-1" /> View
                         </Button>
-                        <Button variant="ghost" size="sm" className="w-full" onClick={() => handleViewInvoices(customer.id)}>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full" 
+                          onClick={() => handleViewInvoices(customer.id)}
+                        >
                           <FileText className="h-4 w-4 mr-1" /> Invoices
                         </Button>
-                        <Button variant="ghost" size="sm" className="w-full" onClick={() => handleViewQuotes(customer.id)}>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full" 
+                          onClick={() => handleViewQuotes(customer.id)}
+                        >
                           <Mail className="h-4 w-4 mr-1" /> Quotes
                         </Button>
                       </div>

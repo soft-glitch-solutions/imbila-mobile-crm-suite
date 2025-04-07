@@ -1,7 +1,8 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Plus, Filter, Phone, Mail } from "lucide-react";
@@ -16,16 +17,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Lead {
-  id: number;
+  id: string;
   name: string;
-  company: string;
   email: string;
   phone: string;
   status: string;
-  value: string;
-  date: string;
+  source: string;
+  notes: string;
+  created_at: string;
 }
 
 interface LeadManagementProps {
@@ -36,101 +39,114 @@ const LeadManagement = ({ businessType }: LeadManagementProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+  const { businessProfile } = useAuth();
+  
   const [newLead, setNewLead] = useState({
     name: "",
-    company: "",
     email: "",
     phone: "",
-    status: "New",
-    value: "",
+    status: "new",
+    source: "",
+    notes: ""
   });
 
-  // Sample data
-  const leads: Lead[] = [
-    { 
-      id: 1, 
-      name: "Sarah Johnson", 
-      company: "Tech Solutions", 
-      email: "sarah@techsolutions.com",
-      phone: "(011) 555-1234",
-      status: "New", 
-      value: "R12,500",
-      date: "2025-03-28"
-    },
-    { 
-      id: 2, 
-      name: "Michael Brown", 
-      company: "Brown Consulting", 
-      email: "michael@brownconsulting.com",
-      phone: "(012) 555-5678",
-      status: "Contacted", 
-      value: "R28,000",
-      date: "2025-03-25"
-    },
-    { 
-      id: 3, 
-      name: "Emily Davis", 
-      company: "Innovate Inc", 
-      email: "emily@innovate.com",
-      phone: "(021) 555-9012",
-      status: "Qualified", 
-      value: "R45,000",
-      date: "2025-03-20"
-    },
-    { 
-      id: 4, 
-      name: "Robert Wilson", 
-      company: "Wilson Group", 
-      email: "robert@wilsongroup.com",
-      phone: "(031) 555-3456",
-      status: "Proposal", 
-      value: "R78,000",
-      date: "2025-03-15"
-    },
-    { 
-      id: 5, 
-      name: "Jennifer Lee", 
-      company: "Creative Solutions", 
-      email: "jennifer@creative.com",
-      phone: "(041) 555-7890",
-      status: "Negotiation", 
-      value: "R35,000",
-      date: "2025-03-10"
-    }
-  ];
+  useEffect(() => {
+    const fetchLeads = async () => {
+      if (!businessProfile) return;
+      
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('leads')
+          .select('*')
+          .eq('business_id', businessProfile.id)
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        setLeads(data || []);
+      } catch (error) {
+        console.error('Error fetching leads:', error);
+        toast.error('Failed to load leads data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchLeads();
+  }, [businessProfile]);
 
   const filteredLeads = leads.filter((lead) =>
-    lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lead.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lead.status.toLowerCase().includes(searchTerm.toLowerCase())
-  ).filter(lead => activeTab === "all" || lead.status.toLowerCase() === activeTab.toLowerCase());
+    (lead.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    lead.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    lead.status?.toLowerCase().includes(searchTerm.toLowerCase()))
+    &&
+    (activeTab === "all" || lead.status.toLowerCase() === activeTab.toLowerCase())
+  );
 
-  const handleAddLead = () => {
-    // In a real app, this would call an API to add the lead
-    toast.success("New lead added successfully!");
-    setIsAddDialogOpen(false);
-    // Reset form
-    setNewLead({
-      name: "",
-      company: "",
-      email: "",
-      phone: "",
-      status: "New",
-      value: "",
-    });
+  const handleAddLead = async () => {
+    if (!businessProfile) {
+      toast.error('You must have a business profile to add leads');
+      return;
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('leads')
+        .insert({
+          business_id: businessProfile.id,
+          name: newLead.name,
+          email: newLead.email,
+          phone: newLead.phone,
+          status: newLead.status,
+          source: newLead.source,
+          notes: newLead.notes
+        })
+        .select();
+        
+      if (error) throw error;
+      
+      toast.success('New lead added successfully!');
+      setIsAddDialogOpen(false);
+      
+      // Add the new lead to the state
+      if (data && data.length > 0) {
+        setLeads(prevLeads => [data[0], ...prevLeads]);
+      }
+      
+      // Reset form
+      setNewLead({
+        name: "",
+        email: "",
+        phone: "",
+        status: "new",
+        source: "",
+        notes: ""
+      });
+    } catch (error) {
+      console.error('Error adding lead:', error);
+      toast.error('Failed to add lead');
+    }
+  };
+
+  const handleViewLead = (id: string) => {
+    navigate(`/leads/${id}`);
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "New":
+      case "new":
         return "bg-green-100 text-green-800";
-      case "Contacted":
+      case "contacted":
         return "bg-blue-100 text-blue-800";
-      case "Qualified":
+      case "qualified":
         return "bg-purple-100 text-purple-800";
-      case "Proposal":
+      case "proposal":
         return "bg-orange-100 text-orange-800";
-      case "Negotiation":
+      case "negotiation":
         return "bg-yellow-100 text-yellow-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -140,6 +156,10 @@ const LeadManagement = ({ businessType }: LeadManagementProps) => {
   const handleTabChange = (value: string) => {
     setActiveTab(value);
   };
+
+  if (isLoading) {
+    return <div className="text-center py-10">Loading leads data...</div>;
+  }
 
   return (
     <div className="space-y-6 pb-20">
@@ -171,17 +191,6 @@ const LeadManagement = ({ businessType }: LeadManagementProps) => {
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="company" className="text-right">
-                  Company
-                </Label>
-                <Input
-                  id="company"
-                  value={newLead.company}
-                  onChange={(e) => setNewLead({...newLead, company: e.target.value})}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="email" className="text-right">
                   Email
                 </Label>
@@ -205,13 +214,25 @@ const LeadManagement = ({ businessType }: LeadManagementProps) => {
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="value" className="text-right">
-                  Value (R)
+                <Label htmlFor="source" className="text-right">
+                  Source
                 </Label>
                 <Input
-                  id="value"
-                  value={newLead.value}
-                  onChange={(e) => setNewLead({...newLead, value: e.target.value})}
+                  id="source"
+                  value={newLead.source}
+                  onChange={(e) => setNewLead({...newLead, source: e.target.value})}
+                  className="col-span-3"
+                  placeholder="Website, Referral, etc."
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="notes" className="text-right">
+                  Notes
+                </Label>
+                <Input
+                  id="notes"
+                  value={newLead.notes}
+                  onChange={(e) => setNewLead({...newLead, notes: e.target.value})}
                   className="col-span-3"
                 />
               </div>
@@ -252,22 +273,23 @@ const LeadManagement = ({ businessType }: LeadManagementProps) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {filteredLeads.length > 0 ? (
               filteredLeads.map((lead) => (
-                <Card key={lead.id} className="overflow-hidden">
+                <Card key={lead.id} className="overflow-hidden cursor-pointer" onClick={() => handleViewLead(lead.id)}>
                   <CardContent className="p-4">
                     <div className="flex flex-col h-full">
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <h3 className="font-medium">{lead.name}</h3>
-                          <p className="text-sm text-gray-500">{lead.company}</p>
+                          <p className="text-sm text-gray-500">{lead.email || 'No email'}</p>
                         </div>
                         <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(lead.status)}`}>
-                          {lead.status}
+                          {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
                         </span>
                       </div>
                       
                       <div className="text-sm my-2">
-                        <p className="font-medium mb-1">Value: {lead.value}</p>
-                        <p className="text-gray-500">{lead.date}</p>
+                        <p className="text-gray-500">
+                          {new Date(lead.created_at).toLocaleDateString()}
+                        </p>
                       </div>
                       
                       <div className="mt-auto pt-3 border-t flex justify-between">
