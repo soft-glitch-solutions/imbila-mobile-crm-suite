@@ -1,24 +1,30 @@
+
 import { useState, useEffect } from "react";
 import MobileNavbar from "./shared/MobileNavbar";
 import Dashboard from "./Dashboard";
 import LeadManagement from "./leads/LeadManagement";
+import LeadDetails from "./leads/LeadDetails";
 import SalesTracking from "./sales/SalesTracking";
+import SaleDetails from "./sales/SaleDetails";
 import ComplianceCenter from "./compliance/ComplianceCenter";
 import WebsiteTemplates from "./website/WebsiteTemplates";
+import WebsiteTemplateSelector from "./website/WebsiteTemplateSelector";
 import BusinessTypeSelector from "./BusinessTypeSelector";
 import { User, BellRing, Menu, Sun, Moon, Settings, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import QuoteGenerator from "./quotes/QuoteGenerator";
+import QuoteHistory from "./quotes/QuoteHistory";
 import BusinessProfile from "./profile/BusinessProfile";
 import CustomerList from "./customers/CustomerList";
+import CustomerDetails from "./customers/CustomerDetails";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Switch } from "./ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
 import { Progress } from "./ui/progress";
 import BusinessTypeChangeRequest from "./business/BusinessTypeChangeRequest";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Routes, Route, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 
@@ -29,6 +35,7 @@ const Layout = () => {
   const isMobile = useIsMobile();
   const { user, profile, businessProfile, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   
   useEffect(() => {
     if (darkMode) {
@@ -37,6 +44,30 @@ const Layout = () => {
       document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
+  
+  // Update active tab based on current path
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === "/" || path === "/dashboard") {
+      setActiveTab("Dashboard");
+    } else if (path.includes("/leads")) {
+      setActiveTab("Leads");
+    } else if (path.includes("/sales")) {
+      setActiveTab("Sales");
+    } else if (path.includes("/customers")) {
+      setActiveTab("Customers");
+    } else if (path.includes("/quotes")) {
+      setActiveTab("Quotes");
+    } else if (path.includes("/compliance")) {
+      setActiveTab("Compliance");
+    } else if (path.includes("/website")) {
+      setActiveTab("Website");
+    } else if (path.includes("/profile")) {
+      setActiveTab("Profile");
+    } else if (path.includes("/settings")) {
+      setActiveTab("Settings");
+    }
+  }, [location.pathname]);
   
   const calculateProfileHealth = () => {
     if (!businessProfile) return 0;
@@ -62,103 +93,41 @@ const Layout = () => {
     }
     return user?.email?.substring(0, 2).toUpperCase() || "U";
   };
-  
-  const renderContent = () => {
-    if (!businessProfile) {
-      return (
-        <div className="px-4 py-6">
-          <BusinessTypeSelector onSelectBusinessType={(type) => {
-            navigate('/profile');
-          }} />
-        </div>
-      );
-    }
-    
-    switch (activeTab) {
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    // Navigate based on tab selection
+    switch (tab) {
       case "Dashboard":
-        return <Dashboard businessType={businessProfile.business_type} />;
+        navigate("/dashboard");
+        break;
       case "Leads":
-        return <LeadManagement businessType={businessProfile.business_type} />;
+        navigate("/leads");
+        break;
       case "Sales":
-        return <SalesTracking businessType={businessProfile.business_type} />;
+        navigate("/sales");
+        break;
       case "Customers":
-        return <CustomerList businessType={businessProfile.business_type} />;
+        navigate("/customers");
+        break;
       case "Quotes":
-        return <QuoteGenerator businessType={businessProfile.business_type} />;
+        navigate("/quotes");
+        break;
       case "Compliance":
-        return <ComplianceCenter businessType={businessProfile.business_type} />;
+        navigate("/compliance");
+        break;
       case "Website":
-        return <WebsiteTemplates businessType={businessProfile.business_type} />;
-      case "Settings":
-        return (
-          <div className="p-4">
-            <Card className="p-6">
-              <h2 className="text-xl font-bold mb-6">Settings</h2>
-              
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-3">Appearance</h3>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      {darkMode ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-                      <span>{darkMode ? 'Dark Mode' : 'Light Mode'}</span>
-                    </div>
-                    <Switch 
-                      checked={darkMode} 
-                      onCheckedChange={setDarkMode}
-                    />
-                  </div>
-                </div>
-                
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-medium mb-3">Business Type</h3>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm">Current business type: <span className="font-medium">{businessProfile?.business_type || 'None'}</span></p>
-                    </div>
-                    <BusinessTypeChangeRequest />
-                  </div>
-                </div>
-                
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-medium mb-3">Notifications</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span>Email Notifications</span>
-                      <Switch defaultChecked />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Push Notifications</span>
-                      <Switch defaultChecked />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-medium mb-3">Account</h3>
-                  <div className="space-y-3">
-                    <Button variant="outline" className="w-full justify-start">
-                      Change Password
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      Subscription Settings
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start text-red-500 hover:text-red-700">
-                      Delete Account
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </div>
-        );
+        navigate("/website");
+        break;
       case "Profile":
-        return <BusinessProfile businessType={businessProfile.business_type} />;
-      default:
-        return <Dashboard businessType={businessProfile.business_type} />;
+        navigate("/profile");
+        break;
+      case "Settings":
+        navigate("/settings");
+        break;
     }
   };
-
+  
   const sidebarItems = [
     { name: "Dashboard", icon: "home" },
     { name: "Website", icon: "file" },
@@ -169,7 +138,7 @@ const Layout = () => {
 
   return (
     <div className={`min-h-full flex flex-col ${darkMode ? 'dark bg-gray-900 text-white' : 'bg-gray-50'}`}>
-      <header className={`${darkMode ? 'bg-gray-800 border-gray-700' : ' border-gray-200'} border-b fixed top-0 left-0 right-0 z-20`}>
+      <header className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b fixed top-0 left-0 right-0 z-20`}>
         <div className="px-4 h-14 flex items-center justify-between">
           <div className="flex items-center">
             <Sheet>
@@ -208,10 +177,7 @@ const Layout = () => {
                       key={item.name}
                       variant="ghost"
                       className={`w-full justify-start text-left px-4 py-2 ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
-                      onClick={() => {
-                        setActiveTab(item.name);
-                        setSidebarOpen(false);
-                      }}
+                      onClick={() => handleTabChange(item.name)}
                     >
                       {item.name}
                     </Button>
@@ -269,11 +235,11 @@ const Layout = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={() => setActiveTab("Profile")}>
+                <DropdownMenuItem onClick={() => handleTabChange("Profile")}>
                   <User className="mr-2 h-4 w-4" />
                   Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setActiveTab("Settings")}>
+                <DropdownMenuItem onClick={() => handleTabChange("Settings")}>
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
                 </DropdownMenuItem>
@@ -312,13 +278,90 @@ const Layout = () => {
             </div>
           )}
           
-          {renderContent()}
+          <Routes>
+            <Route path="/" element={<Dashboard businessType={businessProfile?.business_type || ""} />} />
+            <Route path="/dashboard" element={<Dashboard businessType={businessProfile?.business_type || ""} />} />
+            <Route path="/leads" element={<LeadManagement businessType={businessProfile?.business_type || ""} />} />
+            <Route path="/leads/:id" element={<LeadDetails />} />
+            <Route path="/sales" element={<SalesTracking businessType={businessProfile?.business_type || ""} />} />
+            <Route path="/sales/:id" element={<SaleDetails />} />
+            <Route path="/customers" element={<CustomerList businessType={businessProfile?.business_type || ""} />} />
+            <Route path="/customers/:id" element={<CustomerDetails />} />
+            <Route path="/quotes" element={<QuoteHistory />} />
+            <Route path="/quotes/new" element={<QuoteGenerator businessType={businessProfile?.business_type || ""} />} />
+            <Route path="/quotes/:id" element={<QuoteGenerator businessType={businessProfile?.business_type || ""} />} />
+            <Route path="/compliance" element={<ComplianceCenter businessType={businessProfile?.business_type || ""} />} />
+            <Route path="/website" element={<WebsiteTemplateSelector />} />
+            <Route path="/profile" element={<BusinessProfile businessType={businessProfile?.business_type || ""} />} />
+            <Route path="/settings" element={
+              <div className="p-4">
+                <Card className="p-6">
+                  <h2 className="text-xl font-bold mb-6">Settings</h2>
+                  
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-medium mb-3">Appearance</h3>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          {darkMode ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                          <span>{darkMode ? 'Dark Mode' : 'Light Mode'}</span>
+                        </div>
+                        <Switch 
+                          checked={darkMode} 
+                          onCheckedChange={setDarkMode}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="border-t pt-6">
+                      <h3 className="text-lg font-medium mb-3">Business Type</h3>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm">Current business type: <span className="font-medium">{businessProfile?.business_type || 'None'}</span></p>
+                        </div>
+                        <BusinessTypeChangeRequest />
+                      </div>
+                    </div>
+                    
+                    <div className="border-t pt-6">
+                      <h3 className="text-lg font-medium mb-3">Notifications</h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span>Email Notifications</span>
+                          <Switch defaultChecked />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span>Push Notifications</span>
+                          <Switch defaultChecked />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="border-t pt-6">
+                      <h3 className="text-lg font-medium mb-3">Account</h3>
+                      <div className="space-y-3">
+                        <Button variant="outline" className="w-full justify-start">
+                          Change Password
+                        </Button>
+                        <Button variant="outline" className="w-full justify-start">
+                          Subscription Settings
+                        </Button>
+                        <Button variant="outline" className="w-full justify-start text-red-500 hover:text-red-700">
+                          Delete Account
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            } />
+          </Routes>
         </div>
       </main>
 
       <MobileNavbar 
         activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
+        setActiveTab={handleTabChange} 
         darkMode={darkMode} 
         extraTabs={[
           { id: "Customers", label: "Customers", icon: "user" }
