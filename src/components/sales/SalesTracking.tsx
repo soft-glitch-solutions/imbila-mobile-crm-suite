@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface SalesTrackingProps {
   businessType: string;
@@ -20,6 +21,11 @@ interface Sale {
   date: string;
   status: string;
   items: string;
+  created_at: string;
+  updated_at: string;
+  description?: string;
+  customer_id?: string;
+  business_id: string;
 }
 
 const SalesTracking = ({ businessType }: SalesTrackingProps) => {
@@ -42,7 +48,22 @@ const SalesTracking = ({ businessType }: SalesTrackingProps) => {
         
         if (error) throw error;
         
-        setSales(data || []);
+        // Transform the database records to match our Sale interface
+        const salesData = data.map(sale => ({
+          id: sale.id,
+          business_id: sale.business_id,
+          customer_id: sale.customer_id,
+          customer_name: sale.customer_name || 'Unnamed Customer',
+          amount: sale.amount,
+          date: sale.date,
+          status: sale.status,
+          items: sale.items || '[]',
+          description: sale.description,
+          created_at: sale.created_at,
+          updated_at: sale.updated_at
+        }));
+        
+        setSales(salesData);
       } catch (error) {
         console.error('Error fetching sales:', error);
         toast.error('Failed to load sales data');
@@ -55,7 +76,6 @@ const SalesTracking = ({ businessType }: SalesTrackingProps) => {
   }, [businessProfile]);
 
   const handleNewSale = () => {
-    // In a real app, this would navigate to a new sale form
     navigate('/sales/new');
   };
 
@@ -81,10 +101,6 @@ const SalesTracking = ({ businessType }: SalesTrackingProps) => {
   const paidSales = sales.filter(sale => sale.status === "paid").length;
   const pendingSales = sales.filter(sale => sale.status === "pending").length;
 
-  if (isLoading) {
-    return <div className="text-center py-10">Loading sales data...</div>;
-  }
-
   return (
     <div className="space-y-6 pb-20">
       <div className="flex items-center justify-between">
@@ -95,30 +111,78 @@ const SalesTracking = ({ businessType }: SalesTrackingProps) => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-4">
-        <Card className="bg-gradient-to-br from-imbila-blue/10 to-imbila-blue/5">
-          <CardContent className="p-4">
-            <p className="text-sm text-gray-600">Total Sales</p>
-            <h3 className="text-2xl font-bold">R{totalSales.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}</h3>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-imbila-green/10 to-imbila-green/5">
-          <CardContent className="p-4">
-            <p className="text-sm text-gray-600">Completed Sales</p>
-            <div className="flex justify-between items-center">
-              <h3 className="text-2xl font-bold">{paidSales}</h3>
-              <Badge className="bg-green-100 text-green-800 hover:bg-green-200">{pendingSales} pending</Badge>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {isLoading ? (
+        <div className="grid grid-cols-2 gap-4">
+          <Card className="bg-gradient-to-br from-imbila-blue/10 to-imbila-blue/5">
+            <CardContent className="p-4">
+              <p className="text-sm text-gray-600">Total Sales</p>
+              <Skeleton className="h-8 w-32 mt-1" />
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-imbila-green/10 to-imbila-green/5">
+            <CardContent className="p-4">
+              <p className="text-sm text-gray-600">Completed Sales</p>
+              <div className="flex justify-between items-center">
+                <Skeleton className="h-8 w-16 mt-1" />
+                <Skeleton className="h-6 w-24" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-4">
+          <Card className="bg-gradient-to-br from-imbila-blue/10 to-imbila-blue/5">
+            <CardContent className="p-4">
+              <p className="text-sm text-gray-600">Total Sales</p>
+              <h3 className="text-2xl font-bold">R{totalSales.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}</h3>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-imbila-green/10 to-imbila-green/5">
+            <CardContent className="p-4">
+              <p className="text-sm text-gray-600">Completed Sales</p>
+              <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-bold">{paidSales}</h3>
+                <Badge className="bg-green-100 text-green-800 hover:bg-green-200">{pendingSales} pending</Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Sales List */}
       <div className="space-y-4">
         <h3 className="font-semibold">Recent Sales</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {sales.length > 0 ? (
-            sales.map((sale) => (
+        
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex flex-col h-full">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <Skeleton className="h-5 w-32" />
+                        <Skeleton className="h-4 w-24 mt-1" />
+                      </div>
+                      <Skeleton className="h-6 w-16 rounded-full" />
+                    </div>
+                    
+                    <div className="text-sm my-2">
+                      <Skeleton className="h-5 w-24 mb-1" />
+                      <Skeleton className="h-4 w-48" />
+                    </div>
+                    
+                    <div className="mt-auto pt-3 border-t">
+                      <Skeleton className="h-8 w-full" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : sales.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {sales.map((sale) => (
               <Card key={sale.id} className="overflow-hidden">
                 <CardContent className="p-4">
                   <div className="flex flex-col h-full">
@@ -139,7 +203,15 @@ const SalesTracking = ({ businessType }: SalesTrackingProps) => {
                         R{sale.amount.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
                       </p>
                       <p className="text-xs text-gray-500 line-clamp-1">
-                        {sale.items ? JSON.parse(sale.items).map((item: any) => item.name).join(", ") : "No items"}
+                        {sale.items ? 
+                          (() => {
+                            try {
+                              return JSON.parse(sale.items).map((item: any) => item.name).join(", ")
+                            } catch {
+                              return "No items"
+                            }
+                          })()
+                          : "No items"}
                       </p>
                     </div>
                     
@@ -156,13 +228,13 @@ const SalesTracking = ({ businessType }: SalesTrackingProps) => {
                   </div>
                 </CardContent>
               </Card>
-            ))
-          ) : (
-            <div className="col-span-2 text-center py-8 text-gray-500">
-              No sales found. Click "New Sale" to create one.
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="col-span-2 text-center py-8 text-gray-500">
+            No sales found. Click "New Sale" to create one.
+          </div>
+        )}
       </div>
     </div>
   );

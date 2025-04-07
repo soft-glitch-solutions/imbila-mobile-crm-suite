@@ -1,5 +1,5 @@
 
-import { Home, User, DollarSign, FileText, Users } from "lucide-react";
+import { Home, User, DollarSign, FileText, Users, CheckSquare } from "lucide-react";
 import { Button } from "../ui/button";
 
 interface MobileNavbarProps {
@@ -20,6 +20,8 @@ const MobileNavbar = ({ activeTab, setActiveTab, darkMode = false, extraTabs = [
         return <DollarSign className="h-5 w-5" />;
       case "Customers":
         return <Users className="h-5 w-5" />;
+      case "Tasks":
+        return <CheckSquare className="h-5 w-5" />;
       case "Quotes":
         return <FileText className="h-5 w-5" />;
       default:
@@ -31,6 +33,7 @@ const MobileNavbar = ({ activeTab, setActiveTab, darkMode = false, extraTabs = [
     { id: "Dashboard", label: "Dashboard" },
     { id: "Leads", label: "Leads" },
     { id: "Sales", label: "Sales" },
+    { id: "Tasks", label: "Tasks" },
     ...extraTabs,
     { id: "Quotes", label: "Quotes" },
   ];

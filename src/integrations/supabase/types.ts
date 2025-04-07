@@ -326,6 +326,59 @@ export type Database = {
           },
         ]
       }
+      tasks: {
+        Row: {
+          assigned_to: string | null
+          business_id: string
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string
+          related_id: string | null
+          related_to: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          business_id: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          related_id?: string | null
+          related_to?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          business_id?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          related_id?: string | null
+          related_to?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

@@ -12,6 +12,7 @@ import { ArrowLeft, Save, Trash, Plus, Minus } from "lucide-react";
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface SaleItem {
   id: string;
@@ -25,12 +26,13 @@ interface Sale {
   business_id: string;
   customer_id: string | null;
   customer_name: string;
-  total: number;
+  amount: number;
   status: string;
-  notes: string;
+  description: string | null;
   items: SaleItem[];
   created_at: string;
   updated_at: string;
+  date: string;
 }
 
 const SaleDetails = () => {
@@ -43,7 +45,7 @@ const SaleDetails = () => {
   
   useEffect(() => {
     const fetchSale = async () => {
-      if (!businessProfile) return;
+      if (!businessProfile || !id) return;
       
       try {
         setIsLoading(true);
@@ -61,11 +63,12 @@ const SaleDetails = () => {
           id: data.id,
           business_id: data.business_id,
           customer_id: data.customer_id,
-          customer_name: data.customer_name || '',
-          total: data.amount || 0,
+          customer_name: data.customer_name || 'Unnamed Customer',
+          amount: data.amount,
           status: data.status,
-          notes: data.description || '',
+          description: data.description || '',
           items: data.items ? JSON.parse(data.items) : [],
+          date: data.date,
           created_at: data.created_at,
           updated_at: data.updated_at
         };
@@ -103,7 +106,7 @@ const SaleDetails = () => {
           customer_name: sale.customer_name,
           amount: total,
           status: sale.status,
-          description: sale.notes,
+          description: sale.description,
           items: JSON.stringify(sale.items),
           updated_at: new Date().toISOString()
         })
@@ -176,7 +179,56 @@ const SaleDetails = () => {
   };
 
   if (isLoading) {
-    return <div className="text-center py-10">Loading sale details...</div>;
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-10 w-32" />
+          <div className="flex space-x-2">
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </div>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+              
+              <div className="space-y-4">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+              </div>
+            </div>
+            
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-4">
+                <Skeleton className="h-6 w-20" />
+                <Skeleton className="h-10 w-28" />
+              </div>
+              
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Skeleton className="h-10 flex-1" />
+                    <Skeleton className="h-10 w-20" />
+                    <Skeleton className="h-10 w-28" />
+                    <Skeleton className="h-10 w-28" />
+                    <Skeleton className="h-10 w-10" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="mt-6">
+              <Skeleton className="h-32 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   if (!sale) {
@@ -316,8 +368,8 @@ const SaleDetails = () => {
             <Textarea 
               id="notes"
               rows={4}
-              value={sale.notes || ''}
-              onChange={(e) => handleChange('notes', e.target.value)}
+              value={sale.description || ''}
+              onChange={(e) => handleChange('description', e.target.value)}
               className="resize-none"
             />
           </div>

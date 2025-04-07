@@ -1,3 +1,4 @@
+
 import { Navigate, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
@@ -9,13 +10,17 @@ import LeadManagement from "./components/leads/LeadManagement";
 import LeadDetails from "./components/leads/LeadDetails";
 import SalesTracking from "./components/sales/SalesTracking";
 import SaleDetails from "./components/sales/SaleDetails";
+import NewSaleForm from "./components/sales/NewSaleForm";
 import CustomerList from "./components/customers/CustomerList";
 import CustomerDetails from "./components/customers/CustomerDetails";
+import NewCustomerForm from "./components/customers/NewCustomerForm";
 import QuoteGenerator from "./components/quotes/QuoteGenerator";
 import QuoteHistory from "./components/quotes/QuoteHistory";
 import ComplianceCenter from "./components/compliance/ComplianceCenter";
 import WebsiteTemplateSelector from "./components/website/WebsiteTemplateSelector";
 import BusinessProfile from "./components/profile/BusinessProfile";
+import TaskManagement from "./components/tasks/TaskManagement";
+import TaskDetails from "./components/tasks/TaskDetails";
 
 export default function AppRoutes() {
   return (
@@ -33,11 +38,14 @@ export default function AppRoutes() {
         
         <Route path="sales" element={<SalesTracking businessType="" />} />
         <Route path="sales/:id" element={<SaleDetails />} />
-        <Route path="sales/new" element={<div>New Sale Page</div>} />
+        <Route path="sales/new" element={<NewSaleForm />} />
         
         <Route path="customers" element={<CustomerList businessType="" />} />
         <Route path="customers/:id" element={<CustomerDetails />} />
-        <Route path="customers/new" element={<div>New Customer Page</div>} />
+        <Route path="customers/new" element={<NewCustomerForm />} />
+        
+        <Route path="tasks" element={<TaskManagement />} />
+        <Route path="tasks/:id" element={<TaskDetails />} />
         
         <Route path="quotes" element={<QuoteHistory />} />
         <Route path="quotes/new" element={<QuoteGenerator businessType="" />} />

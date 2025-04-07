@@ -29,7 +29,6 @@ const Layout = () => {
     }
   }, [darkMode]);
   
-  // Update active tab based on current path
   useEffect(() => {
     const path = location.pathname;
     if (path === "/" || path === "/dashboard") {
@@ -80,7 +79,6 @@ const Layout = () => {
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    // Navigate based on tab selection
     switch (tab) {
       case "Dashboard":
         navigate("/dashboard");
@@ -114,6 +112,7 @@ const Layout = () => {
   
   const sidebarItems = [
     { name: "Dashboard", icon: "home" },
+    { name: "Tasks", icon: "check-square" },
     { name: "Website", icon: "file" },
     { name: "Compliance", icon: "clipboard" },
     { name: "Profile", icon: "user" },
