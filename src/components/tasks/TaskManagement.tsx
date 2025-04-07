@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Filter, Calendar, Clock, AlertCircle, Check, Trash, Edit } from "lucide-react";
+import { Plus, Calendar, Check, Trash, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +26,7 @@ interface Task {
   related_id: string | null;
   created_at: string;
   updated_at: string;
+  business_id: string;
 }
 
 const TaskManagement = () => {
@@ -49,11 +50,11 @@ const TaskManagement = () => {
         .from('tasks')
         .select('*')
         .eq('business_id', businessProfile.id)
-        .order('due_date', { ascending: true, nullsLast: true });
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       
-      setTasks(data || []);
+      setTasks(data as Task[] || []);
     } catch (error) {
       console.error('Error fetching tasks:', error);
       toast.error('Failed to load tasks');
@@ -78,14 +79,15 @@ const TaskManagement = () => {
         .insert({
           business_id: businessProfile.id,
           title: newTask.title,
-          priority: newTask.priority
+          priority: newTask.priority,
+          status: 'pending'
         })
         .select()
         .single();
       
       if (error) throw error;
       
-      setTasks([data, ...tasks]);
+      setTasks([data as Task, ...tasks]);
       setNewTask({ title: "", priority: "medium" });
       toast.success('Task created successfully');
     } catch (error) {

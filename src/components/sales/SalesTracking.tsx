@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Download } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
@@ -49,7 +49,7 @@ const SalesTracking = ({ businessType }: SalesTrackingProps) => {
         if (error) throw error;
         
         // Transform the database records to match our Sale interface
-        const salesData = data.map(sale => ({
+        const salesData: Sale[] = data.map((sale: any) => ({
           id: sale.id,
           business_id: sale.business_id,
           customer_id: sale.customer_id,

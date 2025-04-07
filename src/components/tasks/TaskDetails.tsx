@@ -27,6 +27,7 @@ interface Task {
   related_id: string | null;
   created_at: string;
   updated_at: string;
+  business_id: string;
 }
 
 const TaskDetails = () => {
@@ -52,7 +53,7 @@ const TaskDetails = () => {
         
         if (error) throw error;
         
-        setTask(data);
+        setTask(data as Task);
       } catch (error) {
         console.error('Error fetching task:', error);
         toast.error('Failed to load task information');

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { FileUp, AlertTriangle, Check, FilePdf, FileText, Download, ExternalLink } from "lucide-react";
+import { FileUp, AlertTriangle, Check, FileText, Download, ExternalLink, File } from "lucide-react";
 import { format, parseISO, addMonths, isPast, isAfter, isBefore } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,10 +53,7 @@ const ComplianceCenter = ({ businessType }: ComplianceCenterProps) => {
       try {
         setIsLoading(true);
         
-        // In a real app, fetch from a 'compliance_documents' table in the database
-        // For this demo, we'll use sample data based on business type
-        
-        // First, check if there's a document storage bucket
+        // Check if there's a document storage bucket
         const { data: buckets, error: bucketsError } = await supabase
           .storage
           .listBuckets();
@@ -76,45 +72,40 @@ const ComplianceCenter = ({ businessType }: ComplianceCenterProps) => {
             });
             
           if (createError) throw createError;
-          
-          documentsBucket = newBucket;
         }
         
         // Get files from the business's folder
-        const { data: files, error: filesError } = await supabase
-          .storage
-          .from('documents')
-          .list(`${businessProfile.id}`, {
-            sortBy: { column: 'name', order: 'asc' },
-          });
-          
-        if (filesError) throw filesError;
-        
-        // Get document metadata
-        const { data: metadata, error: metadataError } = await supabase
-          .from('document_metadata')
-          .select('*')
-          .eq('business_id', businessProfile.id);
-          
-        // If the metadata table doesn't exist, we'll use sample data
-        let compiledDocuments: ComplianceItem[] = [];
-        
-        if (metadataError) {
-          // Sample compliance items based on business type
-          const sampleDocuments = getSampleComplianceItems(businessType);
-          compiledDocuments = sampleDocuments;
-        } else if (metadata && metadata.length > 0) {
-          // Convert metadata to ComplianceItem format
-          compiledDocuments = metadata.map(item => {
-            const fileExists = files?.some(f => f.name === item.file_name);
-            let status: "valid" | "expiring" | "expired" | "missing" = "valid";
-            let progress = fileExists ? 100 : 0;
+        let files: any[] = [];
+        try {
+          const { data: fileData, error: filesError } = await supabase
+            .storage
+            .from('documents')
+            .list(`${businessProfile.id}`, {
+              sortBy: { column: 'name', order: 'asc' },
+            });
             
-            if (!fileExists) {
-              status = "missing";
-              progress = 0;
-            } else if (item.expiry_date) {
-              const expiryDate = parseISO(item.expiry_date);
+          if (!filesError && fileData) {
+            files = fileData;
+          }
+        } catch (error) {
+          console.log("Error fetching files or folder doesn't exist yet:", error);
+        }
+        
+        // Since we don't have a document_metadata table, we'll use sample data
+        const sampleDocuments = getSampleComplianceItems(businessType);
+        
+        // Update documents with file information if available
+        const compiledDocuments = sampleDocuments.map(doc => {
+          const fileExists = files?.some(f => f.name.includes(doc.name.replace(/\s+/g, '-').toLowerCase()));
+          let status: "valid" | "expiring" | "expired" | "missing" = doc.status;
+          let progress = doc.progress;
+          
+          if (fileExists) {
+            status = "valid";
+            progress = 100;
+            
+            if (doc.expiryDate) {
+              const expiryDate = parseISO(doc.expiryDate);
               const threeMonthsFromNow = addMonths(new Date(), 3);
               
               if (isPast(expiryDate)) {
@@ -125,23 +116,15 @@ const ComplianceCenter = ({ businessType }: ComplianceCenterProps) => {
                 progress = 75;
               }
             }
-            
-            return {
-              id: item.id,
-              name: item.name,
-              description: item.description || "",
-              status,
-              progress,
-              document_url: fileExists ? 
-                `${businessProfile.id}/${item.file_name}` : "",
-              expiryDate: item.expiry_date || ""
-            };
-          });
-        } else {
-          // No existing metadata, use sample data
-          const sampleDocuments = getSampleComplianceItems(businessType);
-          compiledDocuments = sampleDocuments;
-        }
+          }
+          
+          return {
+            ...doc,
+            status,
+            progress,
+            document_url: fileExists ? `${businessProfile.id}/${doc.name.replace(/\s+/g, '-').toLowerCase()}` : ""
+          };
+        });
         
         setDocuments(compiledDocuments);
       } catch (error) {
@@ -281,8 +264,21 @@ const ComplianceCenter = ({ businessType }: ComplianceCenterProps) => {
     try {
       setIsUploading(true);
       
+      // Simulate upload progress
+      const interval = setInterval(() => {
+        setUploadProgress(prev => {
+          const newProgress = prev + 10;
+          if (newProgress >= 90) {
+            clearInterval(interval);
+            return 90;
+          }
+          return newProgress;
+        });
+      }, 300);
+      
       // Generate a unique file name
-      const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
+      const safeName = formData.name.replace(/\s+/g, '-').toLowerCase();
+      const fileName = `${safeName}-${Date.now()}${getFileExtension(file.name)}`;
       const filePath = `${businessProfile.id}/${fileName}`;
       
       // Upload the file with progress tracking
@@ -319,22 +315,29 @@ const ComplianceCenter = ({ businessType }: ComplianceCenterProps) => {
         setDocuments(docs => [...docs, documentData]);
       }
       
+      // Complete the progress
+      clearInterval(interval);
+      setUploadProgress(100);
+      
       toast.success("Document uploaded successfully!");
       
       // Reset the form
-      setSelectedDocument(null);
-      setFormData({
-        name: "",
-        description: "",
-        expiryDate: ""
-      });
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      setIsUploading(false);
-      setUploadProgress(0);
+      setTimeout(() => {
+        setSelectedDocument(null);
+        setFormData({
+          name: "",
+          description: "",
+          expiryDate: ""
+        });
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        setIsUploading(false);
+        setUploadProgress(0);
+      }, 500);
     } catch (error) {
       console.error("Error uploading document:", error);
       toast.error("Failed to upload document");
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -387,7 +390,7 @@ const ComplianceCenter = ({ businessType }: ComplianceCenterProps) => {
     
     switch (extension) {
       case 'pdf':
-        return <FilePdf className="h-10 w-10 text-red-500" />;
+        return <File className="h-10 w-10 text-red-500" />;
       default:
         return <FileText className="h-10 w-10 text-blue-500" />;
     }
@@ -412,6 +415,11 @@ const ComplianceCenter = ({ businessType }: ComplianceCenterProps) => {
       default:
         return extension?.toUpperCase() || 'Document';
     }
+  };
+  
+  const getFileExtension = (filename: string): string => {
+    const lastDot = filename.lastIndexOf('.');
+    return lastDot !== -1 ? filename.substring(lastDot) : '';
   };
 
   const complianceProgress = Math.round(
