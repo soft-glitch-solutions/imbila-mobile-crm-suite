@@ -21,12 +21,15 @@ import WebsiteTemplateSelector from "./components/website/WebsiteTemplateSelecto
 import BusinessProfile from "./components/profile/BusinessProfile";
 import TaskManagement from "./components/tasks/TaskManagement";
 import TaskDetails from "./components/tasks/TaskDetails";
+import WebsiteEditor from "./components/website/WebsiteEditor";
+import BusinessLandingPage from "./components/website/BusinessLandingPage";
 
 export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/business/:businessName" element={<BusinessLandingPage />} />
       
       <Route path="/" element={<AuthGuard><Layout /></AuthGuard>}>
         <Route index element={<Navigate to="/dashboard" replace />} />
@@ -53,6 +56,7 @@ export default function AppRoutes() {
         
         <Route path="compliance" element={<ComplianceCenter businessType="" />} />
         <Route path="website" element={<WebsiteTemplateSelector />} />
+        <Route path="website/edit" element={<WebsiteEditor />} />
         <Route path="profile" element={<BusinessProfile businessType="" />} />
         <Route path="settings" element={<div>Settings Page</div>} />
       </Route>

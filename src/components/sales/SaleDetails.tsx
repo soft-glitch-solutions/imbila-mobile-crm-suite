@@ -243,7 +243,7 @@ const SaleDetails = () => {
   }
 
   // Calculate the total
-  const total = sale.items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
+  const total = sale?.items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
 
   return (
     <div className="space-y-6">
