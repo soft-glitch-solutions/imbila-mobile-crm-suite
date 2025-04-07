@@ -36,7 +36,7 @@ const MobileNavbar = ({ activeTab, setActiveTab, darkMode = false, extraTabs = [
   ];
 
   return (
-    <div className={`fixed bottom-0 left-0 right-0 border-t ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} z-20`}>
+    <div className={`fixed bottom-0 left-0 right-0 border-t z-20 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
       <div className="grid grid-cols-5 gap-1 py-1">
         {tabs.map((tab) => (
           <Button

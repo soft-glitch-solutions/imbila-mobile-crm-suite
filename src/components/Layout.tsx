@@ -1,30 +1,14 @@
-
 import { useState, useEffect } from "react";
 import MobileNavbar from "./shared/MobileNavbar";
-import Dashboard from "./Dashboard";
-import LeadManagement from "./leads/LeadManagement";
-import LeadDetails from "./leads/LeadDetails";
-import SalesTracking from "./sales/SalesTracking";
-import SaleDetails from "./sales/SaleDetails";
-import ComplianceCenter from "./compliance/ComplianceCenter";
-import WebsiteTemplates from "./website/WebsiteTemplates";
-import WebsiteTemplateSelector from "./website/WebsiteTemplateSelector";
-import BusinessTypeSelector from "./BusinessTypeSelector";
 import { User, BellRing, Menu, Sun, Moon, Settings, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
-import { Card } from "./ui/card";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
-import QuoteGenerator from "./quotes/QuoteGenerator";
-import QuoteHistory from "./quotes/QuoteHistory";
-import BusinessProfile from "./profile/BusinessProfile";
-import CustomerList from "./customers/CustomerList";
-import CustomerDetails from "./customers/CustomerDetails";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Switch } from "./ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
 import { Progress } from "./ui/progress";
 import BusinessTypeChangeRequest from "./business/BusinessTypeChangeRequest";
-import { useNavigate, Routes, Route, useLocation } from "react-router-dom";
+import { useNavigate, Outlet, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 
@@ -278,84 +262,7 @@ const Layout = () => {
             </div>
           )}
           
-          <Routes>
-            <Route path="/" element={<Dashboard businessType={businessProfile?.business_type || ""} />} />
-            <Route path="/dashboard" element={<Dashboard businessType={businessProfile?.business_type || ""} />} />
-            <Route path="/leads" element={<LeadManagement businessType={businessProfile?.business_type || ""} />} />
-            <Route path="/leads/:id" element={<LeadDetails />} />
-            <Route path="/sales" element={<SalesTracking businessType={businessProfile?.business_type || ""} />} />
-            <Route path="/sales/:id" element={<SaleDetails />} />
-            <Route path="/customers" element={<CustomerList businessType={businessProfile?.business_type || ""} />} />
-            <Route path="/customers/:id" element={<CustomerDetails />} />
-            <Route path="/quotes" element={<QuoteHistory />} />
-            <Route path="/quotes/new" element={<QuoteGenerator businessType={businessProfile?.business_type || ""} />} />
-            <Route path="/quotes/:id" element={<QuoteGenerator businessType={businessProfile?.business_type || ""} />} />
-            <Route path="/compliance" element={<ComplianceCenter businessType={businessProfile?.business_type || ""} />} />
-            <Route path="/website" element={<WebsiteTemplateSelector />} />
-            <Route path="/profile" element={<BusinessProfile businessType={businessProfile?.business_type || ""} />} />
-            <Route path="/settings" element={
-              <div className="p-4">
-                <Card className="p-6">
-                  <h2 className="text-xl font-bold mb-6">Settings</h2>
-                  
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-lg font-medium mb-3">Appearance</h3>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          {darkMode ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-                          <span>{darkMode ? 'Dark Mode' : 'Light Mode'}</span>
-                        </div>
-                        <Switch 
-                          checked={darkMode} 
-                          onCheckedChange={setDarkMode}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="border-t pt-6">
-                      <h3 className="text-lg font-medium mb-3">Business Type</h3>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm">Current business type: <span className="font-medium">{businessProfile?.business_type || 'None'}</span></p>
-                        </div>
-                        <BusinessTypeChangeRequest />
-                      </div>
-                    </div>
-                    
-                    <div className="border-t pt-6">
-                      <h3 className="text-lg font-medium mb-3">Notifications</h3>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span>Email Notifications</span>
-                          <Switch defaultChecked />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span>Push Notifications</span>
-                          <Switch defaultChecked />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="border-t pt-6">
-                      <h3 className="text-lg font-medium mb-3">Account</h3>
-                      <div className="space-y-3">
-                        <Button variant="outline" className="w-full justify-start">
-                          Change Password
-                        </Button>
-                        <Button variant="outline" className="w-full justify-start">
-                          Subscription Settings
-                        </Button>
-                        <Button variant="outline" className="w-full justify-start text-red-500 hover:text-red-700">
-                          Delete Account
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-            } />
-          </Routes>
+          <Outlet />
         </div>
       </main>
 
