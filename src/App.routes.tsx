@@ -1,5 +1,5 @@
 
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
@@ -20,31 +20,29 @@ import BusinessProfile from "./components/profile/BusinessProfile";
 
 export default function AppRoutes() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/onboarding" element={<Onboarding />} />
-        
-        <Route path="/" element={<AuthGuard><Layout /></AuthGuard>}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard businessType="" />} />
-          <Route path="leads" element={<LeadManagement businessType="" />} />
-          <Route path="leads/:id" element={<LeadDetails />} />
-          <Route path="sales" element={<SalesTracking businessType="" />} />
-          <Route path="sales/:id" element={<SaleDetails />} />
-          <Route path="customers" element={<CustomerList businessType="" />} />
-          <Route path="customers/:id" element={<CustomerDetails />} />
-          <Route path="quotes" element={<QuoteHistory />} />
-          <Route path="quotes/new" element={<QuoteGenerator businessType="" />} />
-          <Route path="quotes/:id" element={<QuoteGenerator businessType="" />} />
-          <Route path="compliance" element={<ComplianceCenter businessType="" />} />
-          <Route path="website" element={<WebsiteTemplateSelector />} />
-          <Route path="profile" element={<BusinessProfile businessType="" />} />
-          <Route path="settings" element={<div>Settings Page</div>} />
-        </Route>
-        
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/onboarding" element={<Onboarding />} />
+      
+      <Route path="/" element={<AuthGuard><Layout /></AuthGuard>}>
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="dashboard" element={<Dashboard businessType="" />} />
+        <Route path="leads" element={<LeadManagement businessType="" />} />
+        <Route path="leads/:id" element={<LeadDetails />} />
+        <Route path="sales" element={<SalesTracking businessType="" />} />
+        <Route path="sales/:id" element={<SaleDetails />} />
+        <Route path="customers" element={<CustomerList businessType="" />} />
+        <Route path="customers/:id" element={<CustomerDetails />} />
+        <Route path="quotes" element={<QuoteHistory />} />
+        <Route path="quotes/new" element={<QuoteGenerator businessType="" />} />
+        <Route path="quotes/:id" element={<QuoteGenerator businessType="" />} />
+        <Route path="compliance" element={<ComplianceCenter businessType="" />} />
+        <Route path="website" element={<WebsiteTemplateSelector />} />
+        <Route path="profile" element={<BusinessProfile businessType="" />} />
+        <Route path="settings" element={<div>Settings Page</div>} />
+      </Route>
+      
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 }
