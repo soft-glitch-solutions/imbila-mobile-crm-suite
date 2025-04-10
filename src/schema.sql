@@ -41,6 +41,21 @@ CREATE TABLE public.business_team_members (
   UNIQUE(business_id, user_id)
 );
 
+-- Compliance documents table
+CREATE TABLE public.compliance_documents (
+  business_id UUID REFERENCES public.business_profiles NOT NULL,
+  id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  required BOOLEAN NOT NULL DEFAULT true,
+  category TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  file_url TEXT,
+  uploaded_at TIMESTAMP WITH TIME ZONE,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (business_id, id)
+);
+
 -- Leads table
 CREATE TABLE public.leads (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -144,6 +159,33 @@ CREATE POLICY "Business owners can manage team" ON public.business_team_members
 CREATE POLICY "Members can view team" ON public.business_team_members
   FOR SELECT USING (
     user_id = auth.uid() OR
+    EXISTS (
+      SELECT 1 FROM public.business_profiles
+      WHERE id = business_id AND owner_id = auth.uid()
+    )
+  );
+
+-- Compliance Documents: Business owners can manage documents
+ALTER TABLE public.compliance_documents ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Businesses can view their own documents" ON public.compliance_documents
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.business_profiles
+      WHERE id = business_id AND owner_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Businesses can insert their own documents" ON public.compliance_documents
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.business_profiles
+      WHERE id = business_id AND owner_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Businesses can update their own documents" ON public.compliance_documents
+  FOR UPDATE USING (
     EXISTS (
       SELECT 1 FROM public.business_profiles
       WHERE id = business_id AND owner_id = auth.uid()

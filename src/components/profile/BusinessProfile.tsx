@@ -44,6 +44,16 @@ const BusinessProfile = ({ businessType }: BusinessProfileProps) => {
       setAvatarPreview(profile.avatar_url);
     }
   }, [profile]);
+
+  // Update form values when profile changes
+  useEffect(() => {
+    if (profile) {
+      form.reset({
+        first_name: profile.first_name || "",
+        last_name: profile.last_name || "",
+      });
+    }
+  }, [profile, form]);
   
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -148,7 +158,9 @@ const BusinessProfile = ({ businessType }: BusinessProfileProps) => {
                 <label className="block text-sm font-medium mb-2">Profile Picture</label>
                 <div className="flex items-center space-x-4">
                   <Avatar className="w-20 h-20">
-                    <AvatarImage src={avatarPreview || ""} />
+                    {avatarPreview && (
+                      <AvatarImage src={avatarPreview} />
+                    )}
                     <AvatarFallback>{getInitials()}</AvatarFallback>
                   </Avatar>
                   <div>

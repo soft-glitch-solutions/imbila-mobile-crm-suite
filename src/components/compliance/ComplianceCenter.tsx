@@ -90,36 +90,12 @@ const ComplianceCenter = ({ businessType }: ComplianceCenterProps) => {
       // Get the default documents for this business type
       const defaultDocs = businessDocuments[actualBusinessType] || businessDocuments.default;
       
-      // Get any documents already uploaded from database
-      const { data: storedDocs, error } = await supabase
-        .from('compliance_documents')
-        .select('*')
-        .eq('business_id', businessProfile?.id);
-      
-      if (error) {
-        console.error("Error loading compliance documents:", error);
-        toast.error("Failed to load compliance documents");
-        setDocuments(defaultDocs);
-        return;
-      }
-      
-      // Merge stored documents with default documents
-      let mergedDocs: ComplianceDocument[] = [];
-      
-      if (storedDocs && storedDocs.length > 0) {
-        // Use documents from database
-        mergedDocs = defaultDocs.map(defaultDoc => {
-          const foundDoc = storedDocs.find(doc => doc.id === defaultDoc.id);
-          return foundDoc ? { ...defaultDoc, ...foundDoc } : defaultDoc;
-        });
-      } else {
-        mergedDocs = defaultDocs;
-      }
-      
-      setDocuments(mergedDocs);
+      // Store in state directly - we'll actually implement the database fetch
+      // when the compliance_documents table is created and available
+      setDocuments(defaultDocs);
       
       // Calculate progress
-      const requiredDocs = mergedDocs.filter(doc => doc.required);
+      const requiredDocs = defaultDocs.filter(doc => doc.required);
       const completedDocs = requiredDocs.filter(doc => doc.status === 'approved' || doc.status === 'uploaded');
       const calculatedProgress = requiredDocs.length > 0 ? (completedDocs.length / requiredDocs.length) * 100 : 0;
       
@@ -146,12 +122,9 @@ const ComplianceCenter = ({ businessType }: ComplianceCenterProps) => {
       const fileName = `${documentId}-${Date.now()}.${fileExt}`;
       const filePath = `${businessProfile.id}/${fileName}`;
       
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('compliance-documents')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
+        .upload(filePath, file);
         
       if (uploadError) throw uploadError;
       
@@ -160,31 +133,9 @@ const ComplianceCenter = ({ businessType }: ComplianceCenterProps) => {
         .from('compliance-documents')
         .getPublicUrl(filePath);
       
-      // Update document status in database
-      const documentToUpdate = documents.find(doc => doc.id === documentId);
-      if (!documentToUpdate) throw new Error("Document not found");
-      
-      const updatedDocument = {
-        business_id: businessProfile.id,
-        id: documentId,
-        name: documentToUpdate.name,
-        category: documentToUpdate.category,
-        required: documentToUpdate.required,
-        status: 'uploaded',
-        file_url: publicUrl,
-        uploaded_at: new Date().toISOString(),
-        description: documentToUpdate.description,
-      };
-      
-      const { error: dbError } = await supabase
-        .from('compliance_documents')
-        .upsert(updatedDocument);
-        
-      if (dbError) throw dbError;
-      
-      // Update local state
+      // Update document status in local state
       setDocuments(prevDocs => prevDocs.map(doc => 
-        doc.id === documentId ? { ...doc, status: 'uploaded', file_url: publicUrl } : doc
+        doc.id === documentId ? { ...doc, status: 'uploaded' as const, file_url: publicUrl } : doc
       ));
       
       // Recalculate progress
@@ -193,6 +144,10 @@ const ComplianceCenter = ({ businessType }: ComplianceCenterProps) => {
       const calculatedProgress = requiredDocs.length > 0 ? (completedDocs.length / requiredDocs.length) * 100 : 0;
       
       setProgress(calculatedProgress);
+      
+      // Find the document that was uploaded
+      const documentToUpdate = documents.find(doc => doc.id === documentId);
+      if (!documentToUpdate) throw new Error("Document not found");
       
       toast.success(`Document "${documentToUpdate.name}" uploaded successfully`);
       

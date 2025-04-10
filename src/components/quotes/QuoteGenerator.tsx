@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +14,7 @@ import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Json } from "@/integrations/supabase/types";
 
 interface Customer {
   id: string;
@@ -113,9 +113,9 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
         business_id: businessProfile.id,
         title: quoteTitle,
         client_name: selectedCustomer ? selectedCustomer.name : "Client",
-        client_email: selectedCustomer ? selectedCustomer.email : null,
-        customer_id: selectedCustomer ? selectedCustomer.id : null,
-        items: quoteItems,
+        client_email: selectedCustomer?.email || null,
+        customer_id: selectedCustomer?.id || null,
+        items: quoteItems as unknown as Json,
         notes: quoteNotes,
         subtotal,
         vat: vatAmount,
@@ -200,7 +200,6 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
     doc.save(`Quote-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
   };
   
-  // Filter customers based on search term
   const filteredCustomers = customers.filter(customer => 
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -227,7 +226,6 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
           <CardTitle>Quote Details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Quote Title */}
           <div>
             <Label htmlFor="quote-title">Quote Title</Label>
             <Input 
@@ -238,7 +236,6 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
             />
           </div>
           
-          {/* Client Information */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <Label>Client Information</Label>
@@ -335,7 +332,6 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
             )}
           </div>
           
-          {/* Quote Items */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <Label>Quote Items</Label>
@@ -351,7 +347,6 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
             
             {quoteItems.length > 0 ? (
               <div className="space-y-4">
-                {/* Header */}
                 <div className="grid grid-cols-12 gap-2 text-sm font-medium text-gray-500 px-2">
                   <div className="col-span-3">Item</div>
                   <div className="col-span-4">Description</div>
@@ -361,7 +356,6 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
                   <div className="col-span-1"></div>
                 </div>
                 
-                {/* Item rows */}
                 {quoteItems.map((item, index) => (
                   <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
                     <Input 
@@ -407,7 +401,6 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
                 
                 <Separator className="my-4" />
                 
-                {/* Summary */}
                 <div className="flex flex-col items-end space-y-1 text-right mr-10">
                   <div className="flex w-48 justify-between">
                     <span className="text-gray-600">Subtotal:</span>
@@ -435,7 +428,6 @@ const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
             )}
           </div>
           
-          {/* Notes */}
           <div>
             <Label htmlFor="notes">Notes</Label>
             <Textarea

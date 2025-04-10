@@ -64,9 +64,10 @@ const BusinessLandingPage = () => {
         
         setBusinessData(businessData);
         
-        // Then get the website data - Fixed: using any type to get around TypeScript issues
+        // Then get the website data
+        // Use maybeSingle to handle case where no data is found
         const { data: websiteData, error: websiteError } = await supabase
-          .from('website_data' as any)
+          .from('website_data')
           .select('*')
           .eq('business_id', businessData.id)
           .maybeSingle();
@@ -186,7 +187,7 @@ const BusinessLandingPage = () => {
           </h2>
           
           <div className="grid md:grid-cols-3 gap-8">
-            {(websiteData?.services && websiteData.services.length > 0) ? (
+            {(websiteData?.services && Array.isArray(websiteData.services) && websiteData.services.length > 0) ? (
               websiteData.services.map((service, index) => (
                 <Card key={index} className="p-6">
                   <h3 className="text-xl font-bold mb-3">{service.title}</h3>
