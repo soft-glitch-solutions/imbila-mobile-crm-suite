@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import MobileNavbar from "./shared/MobileNavbar";
 import { User, BellRing, Menu, Sun, Moon, Settings, LogOut } from "lucide-react";
@@ -47,6 +48,8 @@ const Layout = () => {
       setActiveTab("Website");
     } else if (path.includes("/profile")) {
       setActiveTab("Profile");
+    } else if (path.includes("/tasks")) {
+      setActiveTab("Tasks");
     } else if (path.includes("/settings")) {
       setActiveTab("Settings");
     }
@@ -79,6 +82,8 @@ const Layout = () => {
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
+    setSidebarOpen(false); // Close sidebar after selection
+    
     switch (tab) {
       case "Dashboard":
         navigate("/dashboard");
@@ -100,6 +105,9 @@ const Layout = () => {
         break;
       case "Website":
         navigate("/website");
+        break;
+      case "Tasks":
+        navigate("/tasks");
         break;
       case "Profile":
         navigate("/profile");
@@ -124,7 +132,7 @@ const Layout = () => {
       <header className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b fixed top-0 left-0 right-0 z-20`}>
         <div className="px-4 h-14 flex items-center justify-between">
           <div className="flex items-center">
-            <Sheet>
+            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="md:hidden">
                   <Menu className="h-5 w-5" />
@@ -169,7 +177,10 @@ const Layout = () => {
                   <Button
                     variant="ghost"
                     className={`w-full justify-start text-left px-4 py-2 ${darkMode ? 'hover:bg-gray-700 text-red-300' : 'hover:bg-gray-100 text-red-500'}`}
-                    onClick={signOut}
+                    onClick={() => {
+                      setSidebarOpen(false);
+                      signOut();
+                    }}
                   >
                     Sign Out
                   </Button>
