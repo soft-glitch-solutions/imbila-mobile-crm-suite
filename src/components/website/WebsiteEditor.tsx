@@ -28,8 +28,8 @@ interface WebsiteData {
   contact_email?: string;
   contact_phone?: string;
   address?: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 const defaultWebsiteData: Partial<WebsiteData> = {
@@ -62,15 +62,15 @@ const WebsiteEditor = () => {
           .from('website_data')
           .select('*')
           .eq('business_id', businessProfile.id)
-          .single();
+          .maybeSingle();
           
-        if (error && error.code !== 'PGSQL_ERROR_22P02') {
+        if (error) {
           console.error("Error fetching website data:", error);
           toast.error("Failed to load website data");
         }
         
         if (data) {
-          setWebsiteData(data);
+          setWebsiteData(data as WebsiteData);
         } else {
           // Set default data with business name
           setWebsiteData({
@@ -122,9 +122,15 @@ const WebsiteEditor = () => {
           .eq('id', websiteData.id);
       } else {
         // Create new record
+        const insertData = {
+          ...website,
+          title: website.title || businessProfile.business_name || "My Business",
+          created_at: new Date().toISOString(),
+        };
+        
         result = await supabase
           .from('website_data')
-          .insert({ ...website, created_at: new Date().toISOString() });
+          .insert(insertData);
       }
       
       if (result.error) {
@@ -138,10 +144,10 @@ const WebsiteEditor = () => {
         .from('website_data')
         .select('*')
         .eq('business_id', businessProfile.id)
-        .single();
+        .maybeSingle();
         
       if (data) {
-        setWebsiteData(data);
+        setWebsiteData(data as WebsiteData);
       }
       
     } catch (error) {

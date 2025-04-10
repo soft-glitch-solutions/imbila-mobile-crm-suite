@@ -281,9 +281,11 @@ export type Database = {
           business_id: string
           created_at: string
           customer_id: string | null
+          customer_name: string | null
           date: string
           description: string | null
           id: string
+          items: Json | null
           status: string
           updated_at: string
         }
@@ -292,9 +294,11 @@ export type Database = {
           business_id: string
           created_at?: string
           customer_id?: string | null
+          customer_name?: string | null
           date?: string
           description?: string | null
           id?: string
+          items?: Json | null
           status?: string
           updated_at?: string
         }
@@ -303,9 +307,11 @@ export type Database = {
           business_id?: string
           created_at?: string
           customer_id?: string | null
+          customer_name?: string | null
           date?: string
           description?: string | null
           id?: string
+          items?: Json | null
           status?: string
           updated_at?: string
         }
@@ -372,6 +378,68 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "tasks_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      website_data: {
+        Row: {
+          address: string | null
+          business_id: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          font_family: string | null
+          hero_image_url: string | null
+          id: string
+          primary_color: string | null
+          secondary_color: string | null
+          services: Json | null
+          testimonials: Json | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          business_id: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          font_family?: string | null
+          hero_image_url?: string | null
+          id?: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          services?: Json | null
+          testimonials?: Json | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          business_id?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          font_family?: string | null
+          hero_image_url?: string | null
+          id?: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          services?: Json | null
+          testimonials?: Json | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_data_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "business_profiles"

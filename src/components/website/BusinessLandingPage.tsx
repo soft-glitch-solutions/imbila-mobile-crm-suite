@@ -21,6 +21,8 @@ interface WebsiteData {
   contact_email?: string;
   contact_phone?: string;
   address?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface BusinessData {
@@ -67,14 +69,14 @@ const BusinessLandingPage = () => {
           .from('website_data')
           .select('*')
           .eq('business_id', businessData.id)
-          .single();
+          .maybeSingle();
         
-        if (websiteError && websiteError.code !== 'PGSQL_ERROR_22P02') {
+        if (websiteError) {
           console.error("Error fetching website data:", websiteError);
         }
         
         if (websiteData) {
-          setWebsiteData(websiteData);
+          setWebsiteData(websiteData as WebsiteData);
         } else {
           // Use default data with business profile info
           setWebsiteData({

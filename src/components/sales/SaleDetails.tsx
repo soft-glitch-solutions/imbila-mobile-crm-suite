@@ -25,7 +25,7 @@ interface Sale {
   id: string;
   business_id: string;
   customer_id: string | null;
-  customer_name: string;
+  customer_name: string | null;
   amount: number;
   status: string;
   description: string | null;
@@ -67,7 +67,7 @@ const SaleDetails = () => {
           amount: data.amount,
           status: data.status,
           description: data.description || '',
-          items: data.items ? JSON.parse(data.items) : [],
+          items: data.items ? (Array.isArray(data.items) ? data.items : []) : [],
           date: data.date,
           created_at: data.created_at,
           updated_at: data.updated_at
