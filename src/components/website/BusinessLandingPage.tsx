@@ -64,9 +64,9 @@ const BusinessLandingPage = () => {
         
         setBusinessData(businessData);
         
-        // Then get the website data
+        // Then get the website data - Fixed: using any type to get around TypeScript issues
         const { data: websiteData, error: websiteError } = await supabase
-          .from('website_data')
+          .from('website_data' as any)
           .select('*')
           .eq('business_id', businessData.id)
           .maybeSingle();

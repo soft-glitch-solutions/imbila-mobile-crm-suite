@@ -1,3 +1,4 @@
+
 import { useAuth } from "@/contexts/AuthContext";
 import { BusinessProfileForm } from "../business/BusinessProfileForm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
@@ -8,7 +9,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Loader2, Upload } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,7 +27,7 @@ const userProfileSchema = z.object({
 const BusinessProfile = ({ businessType }: BusinessProfileProps) => {
   const { user, profile, businessProfile, refreshProfile } = useAuth();
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(profile?.avatar_url || null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   
   const form = useForm<z.infer<typeof userProfileSchema>>({
@@ -36,6 +37,13 @@ const BusinessProfile = ({ businessType }: BusinessProfileProps) => {
       last_name: profile?.last_name || "",
     },
   });
+
+  // Load avatar on component mount
+  useEffect(() => {
+    if (profile?.avatar_url) {
+      setAvatarPreview(profile.avatar_url);
+    }
+  }, [profile]);
   
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -140,7 +148,7 @@ const BusinessProfile = ({ businessType }: BusinessProfileProps) => {
                 <label className="block text-sm font-medium mb-2">Profile Picture</label>
                 <div className="flex items-center space-x-4">
                   <Avatar className="w-20 h-20">
-                    <AvatarImage src={avatarPreview || profile?.avatar_url} />
+                    <AvatarImage src={avatarPreview || ""} />
                     <AvatarFallback>{getInitials()}</AvatarFallback>
                   </Avatar>
                   <div>

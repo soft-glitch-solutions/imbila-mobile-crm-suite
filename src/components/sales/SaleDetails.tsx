@@ -59,6 +59,7 @@ const SaleDetails = () => {
         if (error) throw error;
         
         // Transform the database record to match our Sale interface
+        // Ensure all required fields are handled, with defaults if they don't exist
         const saleData: Sale = {
           id: data.id,
           business_id: data.business_id,
@@ -67,7 +68,10 @@ const SaleDetails = () => {
           amount: data.amount,
           status: data.status,
           description: data.description || '',
-          items: data.items ? (Array.isArray(data.items) ? data.items : []) : [],
+          // Handle different item formats, ensure it's an array
+          items: Array.isArray(data.items) ? data.items : 
+                 typeof data.items === 'string' ? JSON.parse(data.items) :
+                 data.items ? (Array.isArray(data.items) ? data.items : []) : [],
           date: data.date,
           created_at: data.created_at,
           updated_at: data.updated_at

@@ -1,420 +1,465 @@
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Send, Save, Calendar } from "lucide-react";
-import { toast } from "sonner";
-import { format } from "date-fns";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Plus, Trash, FileText, Search, FileDown, User, UserPlus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Json } from "@/integrations/supabase/types";
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { format } from 'date-fns';
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-interface QuoteGeneratorProps {
-  businessType: string;
+interface Customer {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
 }
 
 interface QuoteItem {
   id: string;
+  name: string;
   description: string;
   quantity: number;
   price: number;
 }
 
+interface QuoteGeneratorProps {
+  businessType: string;
+}
+
 const QuoteGenerator = ({ businessType }: QuoteGeneratorProps) => {
   const { businessProfile } = useAuth();
-  const [clientName, setClientName] = useState("");
-  const [clientEmail, setClientEmail] = useState("");
-  const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([
-    { id: "item1", description: "", quantity: 1, price: 0 }
-  ]);
-  const [notes, setNotes] = useState("");
-
-  const addQuoteItem = () => {
-    const newId = `item${quoteItems.length + 1}`;
-    setQuoteItems([...quoteItems, { id: newId, description: "", quantity: 1, price: 0 }]);
-  };
-
-  const removeQuoteItem = (id: string) => {
-    if (quoteItems.length > 1) {
-      setQuoteItems(quoteItems.filter(item => item.id !== id));
-    } else {
-      toast.error("You must have at least one item in your quote");
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [quoteTitle, setQuoteTitle] = useState("New Quote");
+  const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([]);
+  const [quoteNotes, setQuoteNotes] = useState("");
+  const [vatRate, setVatRate] = useState(15); // South Africa's VAT rate
+  
+  useEffect(() => {
+    if (businessProfile) {
+      fetchCustomers();
+    }
+  }, [businessProfile]);
+  
+  const fetchCustomers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('business_id', businessProfile?.id)
+        .order('name', { ascending: true });
+        
+      if (error) throw error;
+      
+      if (data) {
+        setCustomers(data);
+      }
+    } catch (error) {
+      console.error('Error fetching customers:', error);
     }
   };
-
-  const updateQuoteItem = (id: string, field: keyof QuoteItem, value: string | number) => {
-    setQuoteItems(
-      quoteItems.map(item => 
-        item.id === id ? { ...item, [field]: value } : item
-      )
-    );
+  
+  const addItem = () => {
+    const newItem: QuoteItem = {
+      id: `item-${Date.now()}`,
+      name: "",
+      description: "",
+      quantity: 1,
+      price: 0
+    };
+    
+    setQuoteItems([...quoteItems, newItem]);
   };
-
-  const calculateSubtotal = () => {
-    return quoteItems.reduce((total, item) => total + (item.quantity * item.price), 0);
+  
+  const updateItem = (id: string, field: keyof QuoteItem, value: any) => {
+    setQuoteItems(items => items.map(item => 
+      item.id === id ? { ...item, [field]: value } : item
+    ));
   };
-
-  const calculateVAT = () => {
-    return calculateSubtotal() * 0.15;
+  
+  const removeItem = (id: string) => {
+    setQuoteItems(items => items.filter(item => item.id !== id));
   };
-
-  const calculateTotal = () => {
-    return calculateSubtotal() + calculateVAT();
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    handleGenerate();
-  };
-
-  const handleSave = async () => {
-    if (!clientName) {
-      toast.error("Please enter a client name before saving");
+  
+  const subtotal = quoteItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+  const vatAmount = subtotal * (vatRate / 100);
+  const total = subtotal + vatAmount;
+  
+  const handleCreateQuote = async () => {
+    if (!businessProfile) {
+      toast.error("Business profile not found");
+      return;
+    }
+    
+    if (quoteItems.length === 0) {
+      toast.error("Please add at least one item to the quote");
       return;
     }
     
     try {
-      if (!businessProfile) {
-        toast.error("Please complete your business profile before saving quotes");
-        return;
-      }
-      
-      // Convert quoteItems to a format compatible with Json type
-      const itemsForDb: Json = quoteItems.map(item => ({
-        id: item.id,
-        description: item.description,
-        quantity: item.quantity,
-        price: item.price
-      }));
+      const quoteData = {
+        business_id: businessProfile.id,
+        title: quoteTitle,
+        client_name: selectedCustomer ? selectedCustomer.name : "Client",
+        client_email: selectedCustomer ? selectedCustomer.email : null,
+        customer_id: selectedCustomer ? selectedCustomer.id : null,
+        items: quoteItems,
+        notes: quoteNotes,
+        subtotal,
+        vat: vatAmount,
+        total
+      };
       
       const { data, error } = await supabase
         .from('quotes')
-        .insert({
-          business_id: businessProfile.id,
-          title: `Quote for ${clientName}`,
-          client_name: clientName,
-          client_email: clientEmail,
-          items: itemsForDb,
-          notes: notes,
-          subtotal: calculateSubtotal(),
-          vat: calculateVAT(),
-          total: calculateTotal()
-        })
+        .insert(quoteData)
         .select();
-      
+        
       if (error) throw error;
       
-      toast.success("Quote saved successfully!");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to save quote");
+      toast.success("Quote created successfully");
+      
+      // Reset form after successful creation
+      setQuoteTitle("New Quote");
+      setQuoteItems([]);
+      setQuoteNotes("");
+      setSelectedCustomer(null);
+      
+    } catch (error) {
+      console.error('Error creating quote:', error);
+      toast.error("Failed to create quote");
     }
   };
-
-  const handleGenerate = () => {
-    if (!clientName) {
-      toast.error("Please enter a client name before generating");
-      return;
-    }
-    
-    // Generate quote logic would go here
-    toast.success("Quote generated successfully!");
-    handleGeneratePDF();
-  };
-
-  const handleGeneratePDF = () => {
-    if (!clientName) {
-      toast.error("Please enter a client name before generating PDF");
-      return;
-    }
-    
-    const currentDate = format(new Date(), "yyyy-MM-dd");
+  
+  const generatePDF = () => {
     const doc = new jsPDF();
     
-    // Add company logo/header
+    // Add business info
     doc.setFontSize(20);
-    doc.setTextColor(37, 99, 235); // imbila-blue
-    
-    // Add business information if available
-    if (businessProfile?.business_name) {
-      doc.text(businessProfile.business_name.toUpperCase(), 15, 20);
-    } else {
-      doc.text("IMBILA", 15, 20);
-    }
+    doc.text(businessProfile?.business_name || "Business Name", 14, 22);
     
     doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    doc.text("Professional Business Quote", 15, 28);
+    doc.text("QUOTE", 14, 32);
+    doc.text(`Date: ${format(new Date(), 'dd/MM/yyyy')}`, 14, 38);
+    doc.text(`Quote Title: ${quoteTitle}`, 14, 44);
     
-    // Add business contact details if available
-    let yPos = 40;
-    if (businessProfile) {
-      if (businessProfile.logo_url) {
-        try {
-          // Add logic to include logo if needed
-          // This would require additional work with image loading in jsPDF
-        } catch(e) {
-          console.error("Error loading logo:", e);
-        }
-      }
-      
-      doc.setFontSize(10);
-      
-      if (businessProfile.email) {
-        doc.text(`Email: ${businessProfile.email}`, 15, yPos);
-        yPos += 5;
-      }
-      
-      if (businessProfile.phone) {
-        doc.text(`Phone: ${businessProfile.phone}`, 15, yPos);
-        yPos += 5;
-      }
-      
-      if (businessProfile.address) {
-        doc.text(`Address: ${businessProfile.address}`, 15, yPos);
-        yPos += 5;
-      }
-      
-      // Add some space after business details
-      yPos += 5;
-    } else {
-      yPos = 40;
+    // Client info
+    doc.text("Client:", 14, 54);
+    doc.text(selectedCustomer ? selectedCustomer.name : "Client", 35, 54);
+    
+    if (selectedCustomer && selectedCustomer.email) {
+      doc.text("Email:", 14, 60);
+      doc.text(selectedCustomer.email, 35, 60);
     }
     
-    // Add date and reference
-    doc.setFontSize(10);
-    doc.text(`Date: ${currentDate}`, 15, yPos);
-    doc.text(`Reference: QT-${Math.floor(Math.random() * 10000)}`, 15, yPos + 5);
-    
-    // Client information
-    doc.setFontSize(12);
-    doc.text("Client Information:", 15, yPos + 15);
-    doc.setFontSize(10);
-    doc.text(`Name: ${clientName}`, 15, yPos + 22);
-    if (clientEmail) {
-      doc.text(`Email: ${clientEmail}`, 15, yPos + 27);
-    }
-    
-    // Quote items table
+    // Items table
+    const tableColumn = ["Item", "Description", "Qty", "Price (R)", "Total (R)"];
     const tableRows = quoteItems.map(item => [
-      item.description || "Item",
+      item.name,
+      item.description,
       item.quantity.toString(),
-      `R${item.price.toFixed(2)}`,
-      `R${(item.quantity * item.price).toFixed(2)}`
+      item.price.toFixed(2),
+      (item.quantity * item.price).toFixed(2)
     ]);
     
     autoTable(doc, {
-      startY: yPos + 35,
-      head: [["Description", "Quantity", "Unit Price", "Total"]],
+      startY: 70,
+      head: [tableColumn],
       body: tableRows,
-      theme: 'striped',
-      headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255] },
     });
     
-    // Calculate the Y position after the table
-    const finalY = (doc as any).lastAutoTable.finalY + 10;
-    
     // Summary
-    doc.text(`Subtotal: R${calculateSubtotal().toFixed(2)}`, 130, finalY + 10);
-    doc.text(`VAT (15%): R${calculateVAT().toFixed(2)}`, 130, finalY + 17);
-    doc.setFontSize(12);
-    doc.text(`Total: R${calculateTotal().toFixed(2)}`, 130, finalY + 25);
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    doc.text(`Subtotal: R ${subtotal.toFixed(2)}`, 140, finalY);
+    doc.text(`VAT (${vatRate}%): R ${vatAmount.toFixed(2)}`, 140, finalY + 6);
+    doc.text(`Total: R ${total.toFixed(2)}`, 140, finalY + 12);
     
-    // Add notes if available
-    if (notes) {
-      doc.setFontSize(10);
-      doc.text("Notes:", 15, finalY + 40);
-      
-      const splitNotes = doc.splitTextToSize(notes, 180);
-      doc.text(splitNotes, 15, finalY + 47);
+    // Notes
+    if (quoteNotes) {
+      doc.text("Notes:", 14, finalY + 25);
+      doc.text(quoteNotes, 14, finalY + 31);
     }
     
-    // Add footer
-    const pageCount = doc.internal.pages.length;
-    doc.setFontSize(8);
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.text(
-        `Generated with ${businessProfile?.business_name || "IMBILA"} | ${currentDate}`,
-        doc.internal.pageSize.width / 2,
-        doc.internal.pageSize.height - 10,
-        { align: "center" }
-      );
-    }
+    // Footer
+    doc.text(businessProfile?.address || "", 14, 270);
+    doc.text(businessProfile?.email || "", 14, 276);
+    doc.text(businessProfile?.phone || "", 14, 282);
     
-    // Save PDF
-    const filename = `quote-${clientName.replace(/\s+/g, '-').toLowerCase()}-${currentDate}.pdf`;
-    doc.save(filename);
-    
-    toast.success(`PDF quote downloaded with date stamp: ${currentDate}`);
+    doc.save(`Quote-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+  };
+  
+  // Filter customers based on search term
+  const filteredCustomers = customers.filter(customer => 
+    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+  
+  const selectCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setIsSearchOpen(false);
+    setSearchTerm("");
+  };
+  
+  const clearCustomer = () => {
+    setSelectedCustomer(null);
   };
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold ">Create Quote</h2>
+        <h1 className="text-2xl font-bold">Create Quote</h1>
       </div>
-
-      <form onSubmit={handleSubmit}>
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Client Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <label className="text-sm font-medium">Client Name</label>
-                <Input 
-                  value={clientName} 
-                  onChange={(e) => setClientName(e.target.value)} 
-                  placeholder="Enter client name"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Client Email</label>
-                <Input 
-                  type="email"
-                  value={clientEmail} 
-                  onChange={(e) => setClientEmail(e.target.value)} 
-                  placeholder="Enter client email"
-                  className="mt-1"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Quote Items</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {quoteItems.map((item) => (
-                <div key={item.id} className="space-y-2 pb-3 border-b border-gray-100 last:border-0">
-                  <div>
-                    <label className="text-sm font-medium">Description</label>
-                    <Input
-                      value={item.description}
-                      onChange={(e) => updateQuoteItem(item.id, 'description', e.target.value)}
-                      placeholder="Item description"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-sm font-medium">Quantity</label>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) => updateQuoteItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Price (R)</label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.price}
-                        onChange={(e) => updateQuoteItem(item.id, 'price', parseFloat(e.target.value) || 0)}
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="text-sm font-medium">
-                      Subtotal: R{(item.quantity * item.price).toFixed(2)}
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeQuoteItem(item.id)}
-                      className="h-8 w-8 p-0 text-red-500"
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Quote Details</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Quote Title */}
+          <div>
+            <Label htmlFor="quote-title">Quote Title</Label>
+            <Input 
+              id="quote-title" 
+              value={quoteTitle}
+              onChange={(e) => setQuoteTitle(e.target.value)}
+              placeholder="Enter a title for this quote"
+            />
+          </div>
+          
+          {/* Client Information */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <Label>Client Information</Label>
+              {selectedCustomer ? (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={clearCustomer}
+                >
+                  Clear Selection
+                </Button>
+              ) : (
+                <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Search className="mr-2 h-4 w-4" />
+                      Find Customer
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Search Customers</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <Input
+                        placeholder="Search by name or email"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="mb-4"
+                      />
+                      
+                      {filteredCustomers.length > 0 ? (
+                        <div className="max-h-72 overflow-y-auto space-y-2">
+                          {filteredCustomers.map(customer => (
+                            <div 
+                              key={customer.id} 
+                              className="p-3 border rounded-md hover:bg-gray-100 cursor-pointer"
+                              onClick={() => selectCustomer(customer)}
+                            >
+                              <div className="font-medium">{customer.name}</div>
+                              {customer.email && (
+                                <div className="text-sm text-gray-600">{customer.email}</div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 text-gray-500">
+                          {searchTerm ? "No customers found" : "Search for a customer"}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-center">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="flex items-center"
+                          onClick={() => setSelectedCustomer({ id: "", name: "New Client", email: "" })}
+                        >
+                          <UserPlus className="mr-2 h-4 w-4" />
+                          Create Blank Quote
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
+            
+            {selectedCustomer ? (
+              <div className="p-4 border rounded-md bg-gray-50">
+                <div className="flex items-center mb-2">
+                  <User className="mr-2 h-5 w-5 text-gray-500" />
+                  <span className="font-medium">{selectedCustomer.name}</span>
+                </div>
+                {selectedCustomer.email && (
+                  <div className="text-sm text-gray-600 ml-7">{selectedCustomer.email}</div>
+                )}
+                {selectedCustomer.phone && (
+                  <div className="text-sm text-gray-600 ml-7">{selectedCustomer.phone}</div>
+                )}
+                {selectedCustomer.address && (
+                  <div className="text-sm text-gray-600 ml-7">{selectedCustomer.address}</div>
+                )}
+              </div>
+            ) : (
+              <div className="p-4 border rounded-md border-dashed flex items-center justify-center text-gray-500">
+                No client selected. Create a blank quote or search for an existing client.
+              </div>
+            )}
+          </div>
+          
+          {/* Quote Items */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <Label>Quote Items</Label>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={addItem}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Item
+              </Button>
+            </div>
+            
+            {quoteItems.length > 0 ? (
+              <div className="space-y-4">
+                {/* Header */}
+                <div className="grid grid-cols-12 gap-2 text-sm font-medium text-gray-500 px-2">
+                  <div className="col-span-3">Item</div>
+                  <div className="col-span-4">Description</div>
+                  <div className="col-span-1">Qty</div>
+                  <div className="col-span-2">Price (R)</div>
+                  <div className="col-span-1">Total</div>
+                  <div className="col-span-1"></div>
+                </div>
+                
+                {/* Item rows */}
+                {quoteItems.map((item, index) => (
+                  <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
+                    <Input 
+                      className="col-span-3"
+                      value={item.name}
+                      onChange={(e) => updateItem(item.id, 'name', e.target.value)}
+                      placeholder="Item name"
+                    />
+                    <Input 
+                      className="col-span-4"
+                      value={item.description}
+                      onChange={(e) => updateItem(item.id, 'description', e.target.value)}
+                      placeholder="Description"
+                    />
+                    <Input 
+                      className="col-span-1"
+                      type="number"
+                      min={1}
+                      value={item.quantity}
+                      onChange={(e) => updateItem(item.id, 'quantity', parseInt(e.target.value) || 0)}
+                    />
+                    <Input 
+                      className="col-span-2"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={item.price}
+                      onChange={(e) => updateItem(item.id, 'price', parseFloat(e.target.value) || 0)}
+                    />
+                    <div className="col-span-1 text-right">
+                      R {(item.quantity * item.price).toFixed(2)}
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => removeItem(item.id)}
+                      className="col-span-1"
+                    >
+                      <Trash className="h-4 w-4" />
                     </Button>
                   </div>
-                </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addQuoteItem}
-                className="w-full"
-              >
-                <Plus className="h-4 w-4 mr-1" /> Add Item
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Additional Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <label className="text-sm font-medium">Notes</label>
-              <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Enter any additional notes or terms"
-                className="mt-1"
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-4">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm">Subtotal:</span>
-                  <span className="text-sm font-medium">R{calculateSubtotal().toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">VAT (15%):</span>
-                  <span className="text-sm font-medium">R{calculateVAT().toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between pt-2 border-t">
-                  <span className="font-medium">Total:</span>
-                  <span className="font-medium">R{calculateTotal().toFixed(2)}</span>
+                ))}
+                
+                <Separator className="my-4" />
+                
+                {/* Summary */}
+                <div className="flex flex-col items-end space-y-1 text-right mr-10">
+                  <div className="flex w-48 justify-between">
+                    <span className="text-gray-600">Subtotal:</span>
+                    <span>R {subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex w-48 justify-between">
+                    <span className="text-gray-600">VAT ({vatRate}%):</span>
+                    <span>R {vatAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex w-48 justify-between font-bold">
+                    <span>Total:</span>
+                    <span>R {total.toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Bottom Action Buttons */}
-          <div className="fixed bottom-16 left-0 right-0  dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 p-4 flex gap-2 justify-center">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={handleSave}
-              className="flex-1"
-            >
-              <Save className="h-4 w-4 mr-1" /> Save
-            </Button>
-            <Button 
-              type="submit" 
-              className="flex-1"
-            >
-              <Send className="h-4 w-4 mr-1" /> Generate
-            </Button>
-            <Button 
-              type="button" 
-              variant="secondary" 
-              onClick={handleGeneratePDF}
-              className="flex-1"
-            >
-              <Calendar className="h-4 w-4 mr-1" /> PDF
-            </Button>
+            ) : (
+              <div className="p-8 border rounded-md border-dashed flex flex-col items-center justify-center text-gray-500">
+                <FileText className="mb-2 h-10 w-10" />
+                <p>No items added to this quote yet.</p>
+                <Button variant="outline" size="sm" onClick={addItem} className="mt-2">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add First Item
+                </Button>
+              </div>
+            )}
           </div>
-        </div>
-      </form>
+          
+          {/* Notes */}
+          <div>
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              value={quoteNotes}
+              onChange={(e) => setQuoteNotes(e.target.value)}
+              placeholder="Add any additional information or terms here..."
+              rows={4}
+            />
+          </div>
+        </CardContent>
+        <CardFooter className="justify-between">
+          {quoteItems.length > 0 && (
+            <Button variant="outline" onClick={generatePDF}>
+              <FileDown className="mr-2 h-4 w-4" />
+              Export PDF
+            </Button>
+          )}
+          
+          <Button onClick={handleCreateQuote}>
+            Create Quote
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 };
